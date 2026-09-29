@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+jobs:
+  build-test:
+    name: Build, format & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj', 'dotnet-tools.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: |
+          dotnet tool restore
+          dotnet restore Leaderboard.slnx
+
+      - name: Check formatting
+        run: dotnet format Leaderboard.slnx --verify-no-changes --no-restore
+
+      - name: Build (warnings as errors)
+        run: dotnet build Leaderboard.slnx -c Release --no-restore
+
+      # Integration tests start PostgreSQL 18 with Testcontainers (Docker is available on ubuntu runners).
+      - name: Test with coverage
+        run: >
+          dotnet test --solution Leaderboard.slnx -c Release --no-build
+          --coverage --coverage-output-format cobertura --coverage-settings codecoverage.config.xml
+          --results-directory TestResults
+
+      - name: Coverage report
+        if: always()
+        run: |
+          dotnet reportgenerator -reports:"TestResults/*.cobertura.xml" -targetdir:TestResults/coverage \
+            -reporttypes:"Cobertura;MarkdownSummaryGithub;HtmlSummary"
+          cat TestResults/coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce coverage threshold (Domain + Application >= 80%)
+        run: python3 scripts/check_coverage.py TestResults/coverage/Cobertura.xml 80
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+          retention-days: 14
+
+  dependencies:
+    name: Vulnerable packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Audit NuGet dependencies
+        run: |
+          dotnet restore Leaderboard.slnx
+          dotnet list Leaderboard.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable NuGet packages found"
+            exit 1
+          fi
+
+  docker:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build image and start the stack
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - name: End-to-end smoke test (auth → game → signed score → ranking)
+        run: ./scripts/smoke-test.sh
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  docs:
+    name: Docs are up to date
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r scripts/requirements-docs.txt
+      - name: Generated HTML matches Markdown sources
+        run: python scripts/build_docs.py --check

@@ -24,12 +24,25 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    builder.Services.AddSerilog((services, logger) => logger
-        .ReadFrom.Configuration(builder.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "Leaderboard.Api")
-        .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName));
+    // Levels come from configuration; the sink format is chosen here: JSON (default, for log pipelines) or text (local dev).
+    var jsonLogs = !string.Equals(builder.Configuration["Serilog:Format"], "text", StringComparison.OrdinalIgnoreCase);
+    builder.Services.AddSerilog((services, logger) =>
+    {
+        logger.ReadFrom.Configuration(builder.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty("Application", "Leaderboard.Api")
+            .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName);
+
+        if (jsonLogs)
+        {
+            logger.WriteTo.Console(new RenderedCompactJsonFormatter());
+        }
+        else
+        {
+            logger.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}");
+        }
+    });
 
     builder.WebHost.ConfigureKestrel(kestrel =>
     {

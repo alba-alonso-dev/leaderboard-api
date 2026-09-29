@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Microsoft.Testing.Extensions.CodeCoverage settings: production assemblies only, no generated code. -->
+<Configuration>
+  <CodeCoverage>
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*Leaderboard\.(Domain|Application|Infrastructure|Api)\.dll$</ModulePath>
+      </Include>
+    </ModulePaths>
+    <Attributes>
+      <Exclude>
+        <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+        <Attribute>^System\.Runtime\.CompilerServices\.CompilerGeneratedAttribute$</Attribute>
+        <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+      </Exclude>
+    </Attributes>
+    <Sources>
+      <Exclude>
+        <Source>.*[\\/]Migrations[\\/].*</Source>
+      </Exclude>
+    </Sources>
+  </CodeCoverage>
+</Configuration>

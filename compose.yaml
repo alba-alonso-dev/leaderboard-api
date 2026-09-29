@@ -1,0 +1,47 @@
+# Local environment: API + PostgreSQL.
+#   docker compose up -d --wait   →   http://localhost:8080/swagger
+# Every variable has a development default, so no .env file is required (see .env.example to override).
+name: leaderboard
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: leaderboard
+      POSTGRES_USER: leaderboard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leaderboard-dev-password}
+    volumes:
+      - pgdata:/var/lib/postgresql # PostgreSQL 18+ image layout
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leaderboard -d leaderboard"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    image: leaderboard-api:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=leaderboard;Username=leaderboard;Password=${POSTGRES_PASSWORD:-leaderboard-dev-password}"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-compose-dev-only-signing-key-0123456789abcdef}
+      Database__MigrateOnStartup: "true"
+      Swagger__Enabled: "true"
+      Serilog__Format: json
+      Seed__Admin__Email: ${ADMIN_EMAIL:-admin@leaderboard.local}
+      Seed__Admin__Password: ${ADMIN_PASSWORD:-Admin-dev-Passw0rd}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - dp-keys:/app/keys # Data Protection key ring: encrypts API key secrets, must survive restarts
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  dp-keys:

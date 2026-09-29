@@ -78,7 +78,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             ["Scores:MaxPerPlayerPerMinute"] = "0",
             ["Seed:Admin:Email"] = AdminEmail,
             ["Seed:Admin:Password"] = AdminPassword,
-            ["Serilog:MinimumLevel:Default"] = "Information",
+            ["Serilog:MinimumLevel:Default"] = "Warning",
         };
 
         foreach (var (key, value) in Overrides)

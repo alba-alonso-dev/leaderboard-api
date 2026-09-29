@@ -25,7 +25,7 @@ flowchart LR
     Application --> Domain
 ```
 
-- **Domain**: entidades con invariantes (`Game.EnsureAcceptsScore`, `Game.ToSortKey`, `RefreshToken.WasRotated`), errores de dominio, `Result<T>`. Sin dependencias NuGet.
+- **Domain**: entidades con invariantes (`Game.EnsureAcceptsScore`, `Game.ToRankKey`, `RefreshToken.WasRotated`), errores de dominio, `Result<T>`. Sin dependencias NuGet.
 - **Application**: casos de uso como *handlers* (CQRS liviano sin mediador), validadores FluentValidation, puertos (`IScoreRepository`, `ILeaderboardReadService`, `ITokenService`, `IApiKeySecretProtector`…). Decoradores de validación y logging vía Scrutor.
 - **Infrastructure**: EF Core, SQL de ranking, JWT, PBKDF2, Data Protection.
 - **Api**: Minimal APIs, esquemas de autenticación, ProblemDetails, rate limiting, OpenAPI, health checks.

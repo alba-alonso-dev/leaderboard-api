@@ -24,6 +24,19 @@ internal static class OpenApiSetup
                     License = new OpenApiLicense { Name = "MIT" },
                 };
 
+                // Declared tags fix the section order in Swagger UI (it follows the user journey).
+                document.Tags = new HashSet<OpenApiTag>
+                {
+                    new() { Name = "Auth", Description = "Player registration, login (JWT) and refresh token rotation." },
+                    new() { Name = "Players", Description = "Player profiles and score history." },
+                    new() { Name = "Games", Description = "Games you own: create, update (If-Match), archive." },
+                    new() { Name = "API Keys", Description = "Game-server credentials. The secret is shown once." },
+                    new() { Name = "Scores", Description = "Score submission from game servers (API key + HMAC signature)." },
+                    new() { Name = "Leaderboard", Description = "Top N, pages, absolute and relative player position." },
+                    new() { Name = "Admin", Description = "Moderation (admin role)." },
+                    new() { Name = "Health", Description = "Liveness and readiness probes." },
+                };
+
                 document.Components ??= new OpenApiComponents();
                 document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
                 document.Components.SecuritySchemes[BearerScheme] = new OpenApiSecurityScheme

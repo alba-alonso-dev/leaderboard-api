@@ -1,6 +1,6 @@
 # Arquitectura y Diseño
 
-> **Documento:** `docs/architecture.md` · **Estado:** Diseño objetivo (se implementa progresivamente Nov → Mar) · **Versión:** 1.0  
+> **Documento:** `docs/architecture.md` · **Estado:** Implementado (v1.0) · **Versión:** 1.1  
 > **Relacionados:** [Requerimientos](requirements.md) · [Roadmap y tareas](roadmap-and-tasks.md) · [Estándares de código](coding-standards.md)
 
 ## 1. Visión general
@@ -151,6 +151,7 @@ erDiagram
     GAME ||--o{ GAME_API_KEY : "autoriza"
     GAME ||--o{ SCORE : "recibe"
     GAME ||--o{ LEADERBOARD_ENTRY : "clasifica"
+    GAME ||--o| LEADERBOARD_STATS : "resume"
     GAME_API_KEY ||--o{ SCORE : "firma"
     SCORE ||--o| LEADERBOARD_ENTRY : "es mejor marca de"
 
@@ -205,11 +206,15 @@ erDiagram
         smallint status "Accepted · PendingReview · Rejected"
         timestamptz submitted_at
     }
+    LEADERBOARD_STATS {
+        uuid game_id PK, FK
+        bigint player_count "exacto, mismo statement que el upsert"
+    }
     LEADERBOARD_ENTRY {
         uuid game_id PK, FK
         uuid player_id PK, FK
         bigint best_score
-        bigint sort_key "normalizado: siempre DESC"
+        bigint rank_key "normalizado: menor es mejor"
         uuid score_id FK
         timestamptz achieved_at
         int submissions_count
@@ -221,7 +226,8 @@ erDiagram
 | Decisión | Justificación |
 |---|---|
 | **`SCORE` (histórico inmutable) separado de `LEADERBOARD_ENTRY` (proyección)** | Ranking = 1 fila por jugador → consultas de posición O(log n + k) sin `GROUP BY` sobre millones de eventos. El histórico permite auditoría y recálculo (RF-33). |
-| **`sort_key` normalizado** | `sort_key = value` si `HigherIsBetter`, `-value` si `LowerIsBetter`. Un único índice `(game_id, sort_key DESC, achieved_at ASC, player_id ASC)` sirve a ambos órdenes y al desempate. |
+| **`rank_key` normalizado (menor es mejor)** | `rank_key = -value` si `HigherIsBetter`, `value` si `LowerIsBetter`. El orden del ranking es `(rank_key, achieved_at, player_id)` **todo ascendente**: un único índice sirve a ambos órdenes y al desempate, y admite comparaciones de tuplas `(…) < (…)` como búsquedas de rango. Ver [performance.md](performance.md). |
+| **`leaderboard_stats.player_count`** | Total exacto de jugadores por juego sin `COUNT(*)`: se incrementa en la misma sentencia del upsert cuando el jugador obtiene su primera entrada (`RETURNING (xmax = 0)`). |
 | **UUIDv7 (`Guid.CreateVersion7()`)** | Identificadores no enumerables (mitiga BOLA) y ordenables por tiempo (inserciones amigables con B-tree). |
 | **`citext` para username/email** | Unicidad insensible a mayúsculas sin `LOWER()` en cada consulta. |
 | **`UNIQUE (api_key_id, nonce)` en `SCORE`** | Idempotencia y protección de *replay* garantizadas por la BD, no por memoria. |
@@ -234,7 +240,7 @@ erDiagram
 | Tabla | Índice | Uso |
 |---|---|---|
 | `leaderboard_entries` | PK `(game_id, player_id)` | Upsert de mejor marca, lookup de un jugador. |
-| `leaderboard_entries` | `ix_lb_rank (game_id, sort_key DESC, achieved_at ASC, player_id ASC)` | Top N, paginación, cálculo de rango, ventana relativa. |
+| `leaderboard_entries` | `ix_leaderboard_entries_rank (game_id, rank_key, achieved_at, player_id) INCLUDE (best_score, score_id)` | Top N y páginas (*Index Only Scan*), conteo de rango y ventana relativa (búsquedas por tupla). |
 | `scores` | `ux_scores_nonce (api_key_id, nonce)` UNIQUE | Idempotencia / anti-replay. |
 | `scores` | `ix_scores_player_game (player_id, game_id, submitted_at DESC)` | Historial de un jugador. |
 | `game_api_keys` | `ux_api_keys_key_id (key_id)` UNIQUE | Autenticación de servidor. |
@@ -243,34 +249,39 @@ erDiagram
 
 ### 3.4 Consultas críticas (referencia de implementación)
 
-**Upsert de mejor marca** (dentro de la transacción del envío; atómico frente a concurrencia):
+**Upsert de mejor marca + contador** (una sola sentencia dentro de la transacción del envío; atómica frente a concurrencia):
 
 ```sql
-INSERT INTO leaderboard_entries (game_id, player_id, best_score, sort_key, score_id, achieved_at, submissions_count)
-VALUES (@gameId, @playerId, @value, @sortKey, @scoreId, @now, 1)
-ON CONFLICT (game_id, player_id) DO UPDATE
-SET submissions_count = leaderboard_entries.submissions_count + 1,
-    best_score  = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
-    sort_key    = GREATEST(EXCLUDED.sort_key, leaderboard_entries.sort_key),
-    score_id    = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
-    achieved_at = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END
-RETURNING best_score, (xmax = 0) AS inserted, score_id = @scoreId AS is_personal_best;
+WITH upsert AS (
+    INSERT INTO leaderboard_entries (game_id, player_id, best_score, rank_key, score_id, achieved_at, submissions_count)
+    VALUES (@gameId, @playerId, @value, @rankKey, @scoreId, @now, 1)
+    ON CONFLICT (game_id, player_id) DO UPDATE SET
+        submissions_count = leaderboard_entries.submissions_count + 1,
+        best_score  = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
+        score_id    = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
+        achieved_at = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END,
+        rank_key    = LEAST(EXCLUDED.rank_key, leaderboard_entries.rank_key)
+    RETURNING (xmax = 0) AS inserted
+)
+INSERT INTO leaderboard_stats (game_id, player_count)
+SELECT @gameId, 1 FROM upsert WHERE inserted
+ON CONFLICT (game_id) DO UPDATE SET player_count = leaderboard_stats.player_count + 1;
 ```
 
-**Rango absoluto** (1 + número de entradas estrictamente mejores, con desempate):
+**Rango absoluto** (1 + entradas estrictamente por delante; la comparación de tuplas usa el índice):
 
 ```sql
 SELECT COUNT(*) + 1
 FROM leaderboard_entries
 WHERE game_id = @gameId
-  AND (sort_key > @sortKey
-       OR (sort_key = @sortKey AND achieved_at < @achievedAt)
-       OR (sort_key = @sortKey AND achieved_at = @achievedAt AND player_id < @playerId));
+  AND (rank_key, achieved_at, player_id) < (@rankKey, @achievedAt, @playerId);
 ```
 
-**Ventana relativa** (`k` por encima y `k` por debajo): dos consultas *keyset* sobre `ix_lb_rank` (`ORDER BY … LIMIT k` hacia arriba y hacia abajo) unidas en memoria, con rangos derivados del rango absoluto. Evita `ROW_NUMBER()` sobre toda la tabla.
+**Ventana relativa** (`k` por encima y `k` por debajo): dos búsquedas *keyset* sobre el índice (`… < (…) ORDER BY … DESC LIMIT k` y `… > (…) ORDER BY … LIMIT k`, *Index Scan Backward* en 0,1 ms) con rangos derivados del rango absoluto. Evita `ROW_NUMBER()` sobre toda la tabla.
 
-> **Límite conocido:** `COUNT(*)` es O(rango) sobre el índice. Para ≤ 1 M de entradas por juego cumple RNF-01. Por encima, la alternativa documentada es Redis Sorted Sets (ADR de mejoras futuras).
+**Top N / páginas**: se pagina el índice primero (`ORDER BY rank_key, achieved_at, player_id OFFSET … LIMIT …`) y solo después se unen los `username` de las filas devueltas.
+
+> **Límites conocidos:** el rango absoluto es O(rango) y la paginación O(offset). Con 100 000 jugadores el p95 está por debajo de 50 ms ([performance.md](performance.md)); por encima de ~1 M, la alternativa documentada es Redis Sorted Sets ([ADR-004](adr/0004-future-improvements.md)).
 
 ---
 
@@ -291,7 +302,7 @@ WHERE game_id = @gameId
 | 7 | `POST` | `/api/v1/games` | JWT | Crear juego | `201` | `400`, `401`, `409` |
 | 8 | `GET` | `/api/v1/games?page=&pageSize=&search=` | Anónimo | Listar juegos activos | `200` | `400` |
 | 9 | `GET` | `/api/v1/games/{gameId}` | Anónimo | Detalle de juego | `200` | `404` |
-| 10 | `PATCH` | `/api/v1/games/{gameId}` | JWT · Owner | Actualizar metadatos | `200` | `400`, `401`, `404`, `409`, `412` |
+| 10 | `PUT` | `/api/v1/games/{gameId}` | JWT · Owner · `If-Match` opcional | Reemplazar metadatos editables (`scoreOrder` es inmutable) | `200` + `ETag` | `400`, `401`, `404`, `412` |
 | 11 | `DELETE` | `/api/v1/games/{gameId}` | JWT · Owner | Archivar (soft delete) | `204` | `401`, `404` |
 | 12 | `POST` | `/api/v1/games/{gameId}/api-keys` | JWT · Owner | Emitir API Key | `201` | `401`, `404`, `409` |
 | 13 | `GET` | `/api/v1/games/{gameId}/api-keys` | JWT · Owner | Listar claves (sin secreto) | `200` | `401`, `404` |
@@ -304,6 +315,7 @@ WHERE game_id = @gameId
 | 20 | `GET` | `/api/v1/games/{gameId}/leaderboard/me` | JWT | Mi posición | `200` | `401`, `404` |
 | 21 | `DELETE` | `/api/v1/admin/scores/{scoreId}` | JWT · rol `admin` | Invalidar score (RF-33) | `204` | `401`, `403`, `404` |
 | 22 | `GET` | `/health/live` · `/health/ready` | Anónimo | Health checks | `200` | `503` |
+| 23 | `GET` | `/api/v1/players/{playerId}` | Anónimo · RL `public-read` | Perfil público (sin email) | `200` | `404` |
 
 ¹ `200 OK` cuando la petición es un reintento idempotente (mismo `nonce`) y se devuelve el resultado original.
 
@@ -363,7 +375,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 ```
 
 ```json
-// 201 Created · Location: /api/v1/scores/{scoreId}
+// 201 Created (200 OK si es un reintento con el mismo nonce: "isReplay": true)
 { "scoreId": "…", "value": 7200, "isPersonalBest": true, "bestScore": 7200,
   "rank": 42, "totalPlayers": 1000, "status": "Accepted" }
 ```
@@ -401,7 +413,7 @@ Todas las respuestas de error usan `Content-Type: application/problem+json`:
 
 ```json
 {
-  "type": "https://httpstatuses.io/422",
+  "type": "https://tools.ietf.org/html/rfc4918#section-11.2",
   "title": "Score out of range",
   "status": 422,
   "detail": "Score 2000000 exceeds the maximum of 1000000 configured for game 'space-blaster'.",
@@ -414,7 +426,7 @@ Todas las respuestas de error usan `Content-Type: application/problem+json`:
 Validación (`400`) añade `errors`:
 
 ```json
-{ "type": "https://httpstatuses.io/400", "title": "One or more validation errors occurred.", "status": 400,
+{ "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1", "title": "One or more validation errors occurred.", "status": 400,
   "code": "validation.failed", "traceId": "…",
   "errors": { "password": ["Password must be at least 10 characters long."] } }
 ```
@@ -423,19 +435,24 @@ Validación (`400`) añade `errors`:
 
 | HTTP | `code` | Origen |
 |---|---|---|
-| 400 | `validation.failed` | FluentValidation |
+| 400 | `validation.failed` | FluentValidation (errores por campo en `errors`) |
+| 400 | `http.bad_request` | JSON mal formado / binding |
+| 401 | `auth.unauthorized` | JWT ausente, caducado o manipulado |
 | 401 | `auth.invalid_credentials` | Login |
 | 401 | `auth.invalid_refresh_token` | Refresh (incluye reutilización detectada) |
-| 401 | `apikey.missing` · `apikey.invalid` · `apikey.revoked` | Handler ApiKey |
+| 401 | `apikey.missing` · `apikey.invalid` (inexistente o revocada) | Handler ApiKey |
 | 401 | `apikey.invalid_signature` · `apikey.stale_request` | Handler HMAC |
 | 403 | `apikey.game_mismatch` | La clave pertenece a otro juego |
 | 403 | `auth.forbidden` | Rol insuficiente (admin) |
-| 404 | `game.not_found` · `player.not_found` · `leaderboard.entry_not_found` · `apikey.not_found` | Handlers (también para recursos ajenos) |
+| 404 | `game.not_found` · `player.not_found` · `leaderboard.entry_not_found` · `apikey.not_found` · `score.not_found` | Handlers (también para recursos ajenos) |
+| 404 | `resource.not_found` | Ruta inexistente |
 | 409 | `player.email_taken` · `player.username_taken` · `game.slug_taken` · `apikey.limit_reached` | Unicidad / límites |
-| 409 | `game.archived` | Envío a juego archivado |
+| 409 | `game.archived` | Envío a juego archivado (o emisión de clave) |
+| 409 | `score.nonce_reused` | Mismo nonce con un cuerpo distinto |
 | 412 | `concurrency.conflict` | `If-Match` / `xmin` desactualizado |
 | 422 | `score.out_of_range` · `player.not_found_for_score` | Reglas de dominio |
 | 429 | `rate_limit.exceeded` | RateLimiter (+ `Retry-After`) |
+| 429 | `rate_limit.player_exceeded` | Más de 10 envíos/min del mismo jugador en un juego |
 | 500 | `server.unexpected` | `GlobalExceptionHandler` (sin detalles fuera de Development) |
 | 503 | — | Health check *ready* |
 
@@ -459,7 +476,7 @@ Validación (`400`) añade `errors`:
 | Vida | Access 15 min · Refresh 7 días rotatorio | Hasta revocación (rotación recomendada 90 días) |
 | Claims | `sub`, `unique_name`, `role`, `jti` | `game_id`, `api_key_id`, `auth_type=game_server` |
 | Endpoints | Todo salvo `scores` POST | Solo `POST /games/{id}/scores` |
-| Autorización | Políticas: `Authenticated`, `GameOwner` (por recurso), `Admin` | Política `GameServer` + comprobación `game_id` claim == ruta |
+| Autorización | Usuario autenticado + propiedad del recurso comprobada en el caso de uso (`404` si no es suyo); política `Admin` | Política `GameServer` + comprobación `game_id` claim == ruta |
 
 La separación se hace con **esquemas nombrados** y políticas explícitas: un JWT no puede enviar scores y una API Key no puede gestionar juegos.
 
@@ -518,7 +535,7 @@ sequenceDiagram
 
 **Por qué HMAC y no solo una API Key en cabecera:** una clave en claro interceptada (logs de proxy, herramientas de depuración) permite enviar scores arbitrarios indefinidamente. Con HMAC, capturar una petición solo permite **reenviarla** dentro de la ventana, y el nonce lo neutraliza. Además se garantiza **integridad del cuerpo** (no se puede cambiar `value`). Evaluado en **ADR-003**.
 
-> **Fase de noviembre:** la API Key se envía como `X-Api-Key: {keyId}.{secret}` y se compara en tiempo constante (mismo almacenamiento cifrado). En enero se activa HMAC; el modo simple queda deshabilitado por configuración (`ApiKeys:AllowPlainSecret=false`).
+> **Swagger UI:** en Development la página inyecta `wwwroot/swagger-hmac.js`, que firma las peticiones en el navegador con WebCrypto. En *Authorize → ApiKeyHmac* se introduce `keyId:secret`; al servidor solo llegan `X-Api-Key` (id), `X-Timestamp`, `X-Nonce` y `X-Signature`.
 
 ### 5.4 Defensa en profundidad contra puntuaciones tramposas
 
@@ -535,7 +552,7 @@ sequenceDiagram
 
 | Riesgo | Mitigación |
 |---|---|
-| API1 BOLA | Autorización por recurso (`GameOwner`), `404` para recursos ajenos, UUIDv7 no secuenciales. |
+| API1 BOLA | Propiedad comprobada en cada caso de uso (`GetOwnedAsync`), `404` para recursos ajenos, UUIDv7 no secuenciales. |
 | API2 Broken Authentication | PBKDF2, rate limiting en `auth`, refresh rotation + detección de reutilización, mensajes genéricos. |
 | API3 BOPLA | DTOs explícitos de entrada/salida (sin *mass assignment*), email nunca en rankings. |
 | API4 Unrestricted Resource Consumption | `pageSize ≤ 100`, `n ≤ 100`, `range ≤ 25`, `metadata ≤ 2 KB`, `MaxRequestBodySize` 16 KB, rate limiting. |
@@ -558,7 +575,7 @@ sequenceDiagram
 | Aspecto | Diseño |
 |---|---|
 | **Logging** | Serilog: `UseSerilogRequestLogging`, salida JSON compacta a stdout, enrichers `FromLogContext`, `Environment`, `TraceId/SpanId`. Nivel `Information` por defecto, `Warning` para `Microsoft.*`. |
-| **Health checks** | `/health/live` (proceso vivo, sin dependencias) · `/health/ready` (`AddDbContextCheck` / `AddNpgSql`). Respuesta JSON con estado por componente. |
+| **Health checks** | `/health/live` (proceso vivo, sin dependencias) · `/health/ready` (`AddDbContextCheck<AppDbContext>`). Respuesta JSON con estado por componente. |
 | **Rate limiting** | `Microsoft.AspNetCore.RateLimiting`: `auth` (fixed window 5/min/IP), `score-submit` (token bucket por `api_key_id`), `public-read` (sliding window 120/min/IP). `OnRejected` → ProblemDetails `429` + `Retry-After`. |
 | **Migraciones** | EF Core Migrations; aplicadas automáticamente al arrancar solo si `Database:MigrateOnStartup=true` (Compose/Dev). En producción: *migration bundle* en paso previo. |
 | **Tiempo** | `TimeProvider` inyectado (testeable con `FakeTimeProvider`). Todo en UTC (`timestamptz`). |
@@ -590,10 +607,10 @@ Los ADR se escriben en `docs/adr/` con el formato *Contexto → Decisión → Al
 
 | ADR | Título | Estado | Fase |
 |---|---|---|---|
-| ADR-001 | PostgreSQL como almacén principal | Propuesto (decisión tomada en este diseño) | Ene |
-| ADR-002 | Adopción de Clean Architecture | Propuesto | Ene |
-| ADR-003 | Estrategia anti-cheat: HMAC + nonce + rate limiting + plausibilidad | Propuesto | Ene |
-| ADR-004 | Mejoras futuras: Redis, tiempo real, microservicios, frontend | Propuesto | Mar |
+| [ADR-001](adr/0001-postgresql.md) | PostgreSQL como almacén principal | Aceptado | Ene |
+| [ADR-002](adr/0002-clean-architecture.md) | Adopción de Clean Architecture | Aceptado | Ene |
+| [ADR-003](adr/0003-anti-cheat.md) | Estrategia anti-cheat: HMAC + nonce + rate limiting + plausibilidad | Aceptado | Ene |
+| [ADR-004](adr/0004-future-improvements.md) | Mejoras futuras: Redis, tiempo real, microservicios, frontend | Aceptado | Mar |
 
 ### 7.1 Resumen de decisiones técnicas ya tomadas
 

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Índice de la documentación">
-<title>Documentación de diseño · Leaderboard REST API · Leaderboard API</title>
+<meta name="description" content="HMAC, nonce, rate limiting">
+<title>ADR-003 · Estrategia anti-cheat para el envío de puntuaciones · Leaderboard API</title>
 <link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <style>
@@ -103,35 +103,38 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <a class="skip-link" href="#main">Saltar al contenido</a>
 <div class="layout">
   <aside class="sidebar" aria-label="Navegación de la documentación">
-    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <a class="brand" href="../index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
       <h2>Diseño</h2>
       <ul>
-        <li><a href="index.html" aria-current="page">Inicio<small>Índice de la documentación</small></a></li>
-        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
-        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
-        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
-        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+        <li><a href="../index.html">Inicio<small>Índice de la documentación</small></a></li>
+        <li><a href="../requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="../architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="../roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="../coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
       </ul>
       <h2>Resultados</h2>
       <ul>
-        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="../performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
-        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
-        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
-        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
-        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
+        <li><a href="../adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="../adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="../adr/0003-anti-cheat.html" aria-current="page">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="../adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
       </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
       <h2>En esta página</h2>
 <div class="toc">
 <ul>
-<li><a href="#decisiones-de-arquitectura-adr">Decisiones de arquitectura (ADR)</a></li>
-<li><a href="#lectura-recomendada">Lectura recomendada</a></li>
+<li><a href="#contexto">Contexto</a></li>
+<li><a href="#decision">Decisión</a></li>
+<li><a href="#alternativas-consideradas">Alternativas consideradas</a></li>
+<li><a href="#consecuencias">Consecuencias</a></li>
+<li><a href="#validacion">Validación</a></li>
 </ul>
 </div>
 
@@ -140,85 +143,110 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
   </aside>
   <main id="main">
     <article class="content">
-<h1 id="documentacion-de-diseno-leaderboard-rest-api">Documentación de diseño · Leaderboard REST API<a class="headerlink" href="#documentacion-de-diseno-leaderboard-rest-api" title="Enlace a esta sección">#</a></h1>
-<p>Punto de entrada a la documentación de <strong>análisis, diseño, decisiones y resultados</strong> del proyecto (v1.0 implementada). Cada documento existe en Markdown (fuente, versionado junto al código) y en HTML navegable (generado con <code>scripts/build_docs.py</code>).</p>
+<h1 id="adr-003-estrategia-anti-cheat-para-el-envio-de-puntuaciones">ADR-003 · Estrategia anti-cheat para el envío de puntuaciones<a class="headerlink" href="#adr-003-estrategia-anti-cheat-para-el-envio-de-puntuaciones" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Estado:</strong> Aceptado · <strong>Fecha:</strong> 2027-01 · <strong>Decisores:</strong> autora del proyecto<br />
+<strong>Relacionados:</strong> <a href="../architecture.html#5-estrategia-de-seguridad">Arquitectura §5</a> · <a href="../requirements.html#24-anti-cheat-y-moderacion">Requerimientos RF-29…RF-33</a></p>
+</blockquote>
+<h2 id="contexto">Contexto<a class="headerlink" href="#contexto" title="Enlace a esta sección">#</a></h2>
+<p>Un leaderboard solo tiene valor si sus puntuaciones son creíbles. Amenazas principales:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Documento</th>
-<th>Qué responde</th>
-<th>Markdown</th>
+<th>Amenaza</th>
+<th>Ejemplo</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="requirements.html">Requerimientos</a></td>
-<td>¿Qué debe hacer el sistema y con qué calidad? Actores, RF, RNF medibles, historias de usuario en Gherkin, fuera de alcance.</td>
-<td><a href="./requirements.md">requirements.md</a></td>
+<td><strong>Falsificación</strong></td>
+<td>Un jugador descubre el endpoint y envía <code>value: 999999</code>.</td>
 </tr>
 <tr>
-<td><a href="architecture.html">Arquitectura y diseño</a></td>
-<td>¿Cómo se construye? Capas Clean Architecture, modelo E/R, contrato REST, errores, seguridad JWT vs API Key + HMAC.</td>
-<td><a href="./architecture.md">architecture.md</a></td>
+<td><strong>Robo de credencial</strong></td>
+<td>La API Key aparece en logs de un proxy o en un binario del cliente.</td>
 </tr>
 <tr>
-<td><a href="roadmap-and-tasks.html">Roadmap y tareas</a></td>
-<td>¿Cuándo y en qué orden? Fases Noviembre → Marzo, checklists por tarea, trazabilidad y riesgos.</td>
-<td><a href="./roadmap-and-tasks.md">roadmap-and-tasks.md</a></td>
+<td><strong>Replay</strong></td>
+<td>Se captura una petición válida y se reenvía para inflar estadísticas.</td>
 </tr>
 <tr>
-<td><a href="coding-standards.html">Estándares de código</a></td>
-<td>¿Cómo se escribe y se prueba? Convenciones C#, CQRS liviano, Repository, Result + ProblemDetails, pirámide de tests.</td>
-<td><a href="./coding-standards.md">coding-standards.md</a></td>
+<td><strong>Manipulación en tránsito</strong></td>
+<td>Se altera <code>value</code> en una petición legítima.</td>
 </tr>
 <tr>
-<td><a href="performance.html">Rendimiento</a></td>
-<td>¿Cumple RNF-01? Benchmark k6 con 100 000 jugadores, antes/después y planes de ejecución.</td>
-<td><a href="./performance.md">performance.md</a></td>
+<td><strong>Inundación</strong></td>
+<td>Un servidor comprometido envía miles de puntuaciones por minuto.</td>
+</tr>
+<tr>
+<td><strong>Valores imposibles</strong></td>
+<td>Puntuaciones fuera de lo que el juego permite.</td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="decisiones-de-arquitectura-adr">Decisiones de arquitectura (ADR)<a class="headerlink" href="#decisiones-de-arquitectura-adr" title="Enlace a esta sección">#</a></h2>
+<p>Supuesto clave: <strong>los servidores de juego son autoritativos</strong>. El cliente del jugador nunca envía puntuaciones; si el propio servidor está comprometido, ninguna medida de canal lo evita (para eso está la moderación).</p>
+<h2 id="decision">Decisión<a class="headerlink" href="#decision" title="Enlace a esta sección">#</a></h2>
+<p>Defensa en profundidad con cinco capas:</p>
+<ol>
+<li><strong>API Key por juego + firma HMAC-SHA256</strong> de cada petición.
+   - Cabeceras: <code>X-Api-Key</code> (id público <code>lbk_…</code>), <code>X-Timestamp</code>, <code>X-Nonce</code>, <code>X-Signature</code>.
+   - <code>signature = Base64(HMAC-SHA256(secret, METHOD\nPATH\nTIMESTAMP\nNONCE\nhex(SHA256(body))))</code>.
+   - El <strong>secreto nunca viaja</strong>; se guarda cifrado con ASP.NET Core Data Protection (debe ser recuperable para recalcular la firma) y se compara con <code>CryptographicOperations.FixedTimeEquals</code>.</li>
+<li><strong>Frescura + unicidad</strong>: ventana de ±300 s para el timestamp y <code>UNIQUE (api_key_id, nonce)</code> en base de datos. Un reenvío idéntico devuelve el resultado original (<code>200</code>, idempotente); el mismo nonce con otro cuerpo devuelve <code>409 score.nonce_reused</code>.</li>
+<li><strong>Rate limiting</strong>: <em>token bucket</em> por API Key (60/min, ráfaga 20) en el middleware nativo, más un límite por jugador y juego (10/min) en el caso de uso.</li>
+<li><strong>Plausibilidad</strong>: <code>minScore</code>/<code>maxScore</code> por juego → <code>422 score.out_of_range</code>.</li>
+<li><strong>Moderación y auditoría</strong>: histórico inmutable de puntuaciones; un administrador puede invalidar una puntuación y la mejor marca se recalcula desde el histórico. Los rechazos se registran (<code>Rejected game-server request with key {KeyId}: {ErrorCode}</code>) sin datos sensibles.</li>
+</ol>
+<h2 id="alternativas-consideradas">Alternativas consideradas<a class="headerlink" href="#alternativas-consideradas" title="Enlace a esta sección">#</a></h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>ADR</th>
-<th>Decisión</th>
-<th>Markdown</th>
+<th>Alternativa</th>
+<th>Por qué no (o no solo)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL</a></td>
-<td>PostgreSQL 18 como almacén principal (upsert atómico, índices con <code>INCLUDE</code>, <code>citext</code>, <code>xmin</code>).</td>
-<td><a href="./adr/0001-postgresql.md">0001-postgresql.md</a></td>
+<td><strong>API Key en claro en cabecera</strong></td>
+<td>Una sola filtración permite enviar puntuaciones arbitrarias indefinidamente y no protege la integridad del cuerpo.</td>
 </tr>
 <tr>
-<td><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture</a></td>
-<td>Cuatro capas con dependencias hacia el dominio, CQRS liviano sin mediador, límites verificados por tests.</td>
-<td><a href="./adr/0002-clean-architecture.md">0002-clean-architecture.md</a></td>
+<td><strong>JWT de servidor (client credentials)</strong></td>
+<td>Protege la identidad pero no la integridad del cuerpo ni el replay dentro de la vida del token; requiere un endpoint de emisión de tokens adicional. Válido como evolución si hay muchos consumidores.</td>
 </tr>
 <tr>
-<td><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat</a></td>
-<td>API Key + HMAC-SHA256, nonce idempotente, rate limiting, plausibilidad y moderación.</td>
-<td><a href="./adr/0003-anti-cheat.md">0003-anti-cheat.md</a></td>
+<td><strong>mTLS</strong></td>
+<td>Máxima seguridad de canal, pero gestión de certificados desproporcionada para un proyecto de portafolio y difícil de demostrar en Swagger.</td>
 </tr>
 <tr>
-<td><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras</a></td>
-<td>Redis, tiempo real, microservicios y frontend: disparadores medibles y puntos de extensión.</td>
-<td><a href="./adr/0004-future-improvements.md">0004-future-improvements.md</a></td>
+<td><strong>Firma asimétrica (Ed25519)</strong></td>
+<td>El servidor no necesitaría guardar secretos recuperables. Más compleja para los integradores; se deja como mejora si se exige no almacenar secretos.</td>
+</tr>
+<tr>
+<td><strong>Detección estadística (z-score, p99)</strong></td>
+<td>Útil, pero requiere datos históricos y ajuste; se registra como mejora futura (<code>PendingReview</code> ya existe en el modelo).</td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="lectura-recomendada">Lectura recomendada<a class="headerlink" href="#lectura-recomendada" title="Enlace a esta sección">#</a></h2>
+<h2 id="consecuencias">Consecuencias<a class="headerlink" href="#consecuencias" title="Enlace a esta sección">#</a></h2>
+<p><strong>Positivas</strong></p>
 <ul>
-<li><strong>Reclutador / tech lead con 5 minutos:</strong> <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a> → <a href="architecture.html#1-vision-general">Arquitectura §1–2</a> → <a href="roadmap-and-tasks.html#1-vision-temporal">Roadmap §1</a>.</li>
-<li><strong>Revisor técnico:</strong> <a href="architecture.html#3-modelo-de-datos">Modelo de datos</a> → <a href="architecture.html#4-diseno-de-endpoints-restful">Endpoints</a> → <a href="architecture.html#5-estrategia-de-seguridad">Seguridad</a> → <a href="adr/0003-anti-cheat.html">ADR-003</a> → <a href="performance.html">Rendimiento</a> → <a href="coding-standards.html#4-estrategia-de-testing">Testing</a>.</li>
-<li><strong>Quien vaya a implementar:</strong> <a href="roadmap-and-tasks.html">Roadmap</a> → <a href="coding-standards.html">Estándares</a> → <a href="requirements.html">Requerimientos</a> (criterios de aceptación).</li>
+<li>Capturar una petición solo permite reenviarla durante 5 minutos, y ese reenvío es inocuo (idempotente).</li>
+<li>Alterar el cuerpo invalida la firma (<code>401 apikey.invalid_signature</code>).</li>
+<li>Rotación sin downtime: hasta 5 claves activas por juego.</li>
+<li>Swagger sigue siendo usable: en Development la UI firma las peticiones en el navegador con WebCrypto (<code>wwwroot/swagger-hmac.js</code>); el secreto no se envía al servidor.</li>
 </ul>
+<p><strong>Negativas / riesgos aceptados</strong></p>
+<ul>
+<li>El secreto se almacena <strong>cifrado, no hasheado</strong>: si se filtran a la vez la base de datos y el <em>key ring</em> de Data Protection, las claves quedan expuestas. Mitigación: key ring en volumen separado (en producción, Key Vault) y revocación inmediata.</li>
+<li>Los límites de frecuencia son <strong>por instancia</strong> (en memoria). Con varias réplicas harían falta límites distribuidos (Redis) — ADR-004.</li>
+<li>Un servidor de juego comprometido puede enviar puntuaciones plausibles; solo la moderación lo corrige.</li>
+</ul>
+<h2 id="validacion">Validación<a class="headerlink" href="#validacion" title="Enlace a esta sección">#</a></h2>
+<p>Tests de integración: firma alterada, cuerpo alterado, timestamp caducado, cabeceras ausentes, clave revocada, clave de otro juego (<code>403</code>), JWT de jugador rechazado, replay idempotente, nonce reutilizado (<code>409</code>), límite por jugador (<code>429</code>) y rate limiting con <code>Retry-After</code>. Tests unitarios del autenticador con <code>FakeTimeProvider</code> para los bordes de la ventana.</p>
     </article>
     <footer class="page-footer">
-      <span>Generado desde <a href="index.md"><code>docs/index.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span>Generado desde <a href="0003-anti-cheat.md"><code>docs/adr/0003-anti-cheat.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
       <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
     </footer>
   </main>

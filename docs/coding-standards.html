@@ -106,12 +106,24 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <a class="brand" href="index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
       <ul>
-        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="index.html">Inicio<small>Índice de la documentación</small></a></li>
         <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
         <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
         <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
         <li><a href="coding-standards.html" aria-current="page">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
       </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
@@ -156,7 +168,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <article class="content">
 <h1 id="estandares-de-codigo-patrones-y-testing">Estándares de Código, Patrones y Testing<a class="headerlink" href="#estandares-de-codigo-patrones-y-testing" title="Enlace a esta sección">#</a></h1>
 <blockquote>
-<p><strong>Documento:</strong> <code>docs/coding-standards.md</code> · <strong>Estado:</strong> Vigente desde la Fase 1 · <strong>Versión:</strong> 1.0<br />
+<p><strong>Documento:</strong> <code>docs/coding-standards.md</code> · <strong>Estado:</strong> Vigente (aplicado en v1.0) · <strong>Versión:</strong> 1.1<br />
 <strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="architecture.html">Arquitectura</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a></p>
 </blockquote>
 <p>Estas normas existen para que el código sea <strong>predecible</strong>: cualquier revisor (o entrevistador) debe poder abrir un archivo y saber dónde está cada cosa y por qué. Lo que puede comprobar una herramienta, lo comprueba una herramienta (<code>.editorconfig</code>, analizadores, <code>dotnet format</code>, tests de arquitectura); este documento cubre el resto.</p>
@@ -172,7 +184,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     &lt;AnalysisLevel&gt;latest-recommended&lt;/AnalysisLevel&gt;
     &lt;EnforceCodeStyleInBuild&gt;true&lt;/EnforceCodeStyleInBuild&gt;
     &lt;GenerateDocumentationFile&gt;true&lt;/GenerateDocumentationFile&gt;
-    &lt;NoWarn&gt;$(NoWarn);CS1591&lt;/NoWarn&gt; &lt;!-- XML docs solo donde aportan (API pública/OpenAPI) --&gt;
+    &lt;NoWarn&gt;$(NoWarn);CS1591;CS1573&lt;/NoWarn&gt; &lt;!-- XML docs solo donde aportan (API pública/OpenAPI) --&gt;
   &lt;/PropertyGroup&gt;
 &lt;/Project&gt;
 </code></pre>
@@ -412,7 +424,7 @@ public static class ScoreErrors
 <ul>
 <li>Un validador por Request/Command, en la misma carpeta del caso de uso: <code>SubmitScoreCommandValidator</code>.</li>
 <li>Validación <strong>sintáctica</strong> (formato, longitudes, rangos genéricos) en validadores; validación <strong>semántica</strong> que requiere estado (slug único, score dentro del rango del juego) en el handler/dominio.</li>
-<li>Ejecutada por un filtro de endpoint (<code>ValidationFilter&lt;TRequest&gt;</code>) en Api y por un decorador en Application (defensa en profundidad); <strong>sin</strong> validación automática por reflexión obsoleta (<code>FluentValidation.AspNetCore</code> está deprecado).</li>
+<li>Ejecutada por un <strong>decorador</strong> de Application (<code>ValidationCommandDecorator</code>/<code>ValidationQueryDecorator</code>) antes de cada handler: cualquier punto de entrada (HTTP, tests, futuros consumidores) queda validado igual. Devuelve un <code>ValidationError</code> que la Api traduce a <code>ValidationProblemDetails</code>. <strong>Sin</strong> validación automática por reflexión (<code>FluentValidation.AspNetCore</code> está deprecado).</li>
 <li>Mensajes con <code>WithErrorCode</code> cuando el cliente necesita distinguirlos.</li>
 </ul>
 <h3 id="37-endpoints-minimal-apis">3.7 Endpoints (Minimal APIs)<a class="headerlink" href="#37-endpoints-minimal-apis" title="Enlace a esta sección">#</a></h3>
@@ -464,9 +476,9 @@ public static class ScoreErrors
 <h3 id="41-piramide">4.1 Pirámide<a class="headerlink" href="#41-piramide" title="Enlace a esta sección">#</a></h3>
 <pre class="mermaid">flowchart TB
     A[&quot;🔺 Smoke (CI · Docker Compose)&lt;br/&gt;health + swagger · 2-3 checks&quot;]
-    B[&quot;Integración (WebApplicationFactory + Testcontainers PostgreSQL)&lt;br/&gt;contrato HTTP, auth, SQL real, concurrencia · ~60 tests&quot;]
-    C[&quot;Unitarios (Domain + Application)&lt;br/&gt;reglas, validadores, handlers con fakes · ~150 tests&quot;]
-    D[&quot;Arquitectura (NetArchTest)&lt;br/&gt;regla de dependencias, convenciones · ~10 tests&quot;]
+    B[&quot;Integración (WebApplicationFactory + Testcontainers PostgreSQL)&lt;br/&gt;contrato HTTP, auth, SQL real, concurrencia · 73 tests&quot;]
+    C[&quot;Unitarios (Domain + Application)&lt;br/&gt;reglas, validadores, handlers con fakes · 96 tests&quot;]
+    D[&quot;Arquitectura (NetArchTest)&lt;br/&gt;regla de dependencias, convenciones · 10 tests&quot;]
     A --- B --- C
     C --- D
 </pre>
@@ -484,7 +496,7 @@ public static class ScoreErrors
 <tr>
 <td>Unitario</td>
 <td><code>*.Domain.UnitTests</code>, <code>*.Application.UnitTests</code></td>
-<td>Invariantes, <code>IsBetter</code>/<code>SortKey</code>, validadores, handlers</td>
+<td>Invariantes, <code>IsBetter</code>/<code>RankKey</code>, validadores, handlers</td>
 <td>xUnit v3, Shouldly, NSubstitute, <code>FakeTimeProvider</code></td>
 <td>≥ 80 % líneas en Domain+Application; &lt; 5 s</td>
 </tr>
@@ -604,7 +616,7 @@ public void Domain_ShouldNotDependOnAnyOtherLayer() =&gt;
 </tr>
 <tr>
 <td>Hash de contraseñas</td>
-<td><code>Microsoft.Extensions.Identity.Core</code> (<code>PasswordHasher&lt;T&gt;</code>)</td>
+<td><code>PasswordHasher&lt;T&gt;</code> (framework compartido <code>Microsoft.AspNetCore.App</code>, sin paquete extra)</td>
 <td>MIT</td>
 <td>Infrastructure</td>
 </tr>
@@ -634,18 +646,19 @@ public void Domain_ShouldNotDependOnAnyOtherLayer() =&gt;
 </tr>
 <tr>
 <td>Health checks</td>
-<td><code>AspNetCore.HealthChecks.NpgSql</code></td>
-<td>Apache-2.0</td>
+<td><code>Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore</code></td>
+<td>MIT</td>
 <td>Api</td>
 </tr>
 <tr>
 <td>Tests</td>
-<td><code>xunit.v3</code>, <code>Shouldly</code>, <code>NSubstitute</code>, <code>Testcontainers.PostgreSql</code>, <code>Respawn</code>, <code>NetArchTest.Rules</code>, <code>Microsoft.AspNetCore.Mvc.Testing</code>, <code>Microsoft.Extensions.TimeProvider.Testing</code>, <code>coverlet.collector</code></td>
+<td><code>xunit.v3</code>, <code>Shouldly</code>, <code>NSubstitute</code>, <code>Testcontainers.PostgreSql</code>, <code>Respawn</code>, <code>NetArchTest.Rules</code>, <code>Microsoft.AspNetCore.Mvc.Testing</code>, <code>Microsoft.Extensions.TimeProvider.Testing</code>, <code>Microsoft.Testing.Extensions.CodeCoverage</code> (runner: Microsoft.Testing.Platform)</td>
 <td>Apache-2.0 / BSD / MIT</td>
 <td>tests</td>
 </tr>
 </tbody>
 </table></div>
+<p>Herramientas locales (<code>dotnet-tools.json</code>): <code>dotnet-ef</code> (migraciones) y <code>dotnet-reportgenerator-globaltool</code> (informe de cobertura fusionado).</p>
 <p>Añadir una dependencia nueva requiere justificarla en el PR (propósito, licencia, mantenimiento activo).</p>
     </article>
     <footer class="page-footer">

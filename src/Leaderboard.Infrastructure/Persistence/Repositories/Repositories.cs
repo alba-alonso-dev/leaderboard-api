@@ -131,35 +131,49 @@ internal sealed class ScoreRepository(AppDbContext context) : IScoreRepository
 
     public void Add(Score score) => context.Scores.Add(score);
 
-    public Task UpsertLeaderboardEntryAsync(Score score, long sortKey, CancellationToken cancellationToken) =>
-        // Atomic under concurrency: the row lock taken by ON CONFLICT serializes competing submissions of the same player.
+    public Task UpsertLeaderboardEntryAsync(Score score, long rankKey, CancellationToken cancellationToken) =>
+        // One statement, atomic under concurrency: the row lock taken by ON CONFLICT serializes competing submissions of
+        // the same player. `xmax = 0` identifies a fresh insert (first score of the player) to bump the player counter.
         context.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO leaderboard_entries (game_id, player_id, best_score, sort_key, score_id, achieved_at, submissions_count)
-            VALUES ({score.GameId}, {score.PlayerId}, {score.Value}, {sortKey}, {score.Id}, {score.SubmittedAt}, 1)
-            ON CONFLICT (game_id, player_id) DO UPDATE SET
-                submissions_count = leaderboard_entries.submissions_count + 1,
-                best_score  = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
-                score_id    = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
-                achieved_at = CASE WHEN EXCLUDED.sort_key > leaderboard_entries.sort_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END,
-                sort_key    = GREATEST(EXCLUDED.sort_key, leaderboard_entries.sort_key)
+            WITH upsert AS (
+                INSERT INTO leaderboard_entries (game_id, player_id, best_score, rank_key, score_id, achieved_at, submissions_count)
+                VALUES ({score.GameId}, {score.PlayerId}, {score.Value}, {rankKey}, {score.Id}, {score.SubmittedAt}, 1)
+                ON CONFLICT (game_id, player_id) DO UPDATE SET
+                    submissions_count = leaderboard_entries.submissions_count + 1,
+                    best_score  = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
+                    score_id    = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
+                    achieved_at = CASE WHEN EXCLUDED.rank_key < leaderboard_entries.rank_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END,
+                    rank_key    = LEAST(EXCLUDED.rank_key, leaderboard_entries.rank_key)
+                RETURNING (xmax = 0) AS inserted
+            )
+            INSERT INTO leaderboard_stats (game_id, player_count)
+            SELECT {score.GameId}, 1 FROM upsert WHERE inserted
+            ON CONFLICT (game_id) DO UPDATE SET player_count = leaderboard_stats.player_count + 1
             """,
             cancellationToken);
 
     public async Task RecalculateLeaderboardEntryAsync(Game game, Guid playerId, CancellationToken cancellationToken)
     {
-        var direction = game.ScoreOrder == ScoreOrder.HigherIsBetter ? 1 : -1;
+        var direction = game.ScoreOrder == ScoreOrder.LowerIsBetter ? 1 : -1; // rank_key = value * direction
         await context.Database.ExecuteSqlAsync(
             $"DELETE FROM leaderboard_entries WHERE game_id = {game.Id} AND player_id = {playerId}", cancellationToken);
         await context.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO leaderboard_entries (game_id, player_id, best_score, sort_key, score_id, achieved_at, submissions_count)
+            INSERT INTO leaderboard_entries (game_id, player_id, best_score, rank_key, score_id, achieved_at, submissions_count)
             SELECT s.game_id, s.player_id, s.value, s.value * {direction}, s.id, s.submitted_at,
                    (SELECT COUNT(*) FROM scores c WHERE c.game_id = s.game_id AND c.player_id = s.player_id AND c.status = 0)
             FROM scores s
             WHERE s.game_id = {game.Id} AND s.player_id = {playerId} AND s.status = 0
-            ORDER BY s.value * {direction} DESC, s.submitted_at ASC
+            ORDER BY s.value * {direction} ASC, s.submitted_at ASC
             LIMIT 1
+            """,
+            cancellationToken);
+        await context.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO leaderboard_stats (game_id, player_count)
+            VALUES ({game.Id}, (SELECT COUNT(*) FROM leaderboard_entries WHERE game_id = {game.Id}))
+            ON CONFLICT (game_id) DO UPDATE SET player_count = EXCLUDED.player_count
             """,
             cancellationToken);
     }

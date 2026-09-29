@@ -32,6 +32,8 @@ public sealed class AdminTests(ApiFactory factory) : IntegrationTest(factory)
         await Api.SendAsync(HttpMethod.Delete, $"/api/v1/admin/scores/{score.ScoreId}", admin.AccessToken);
 
         (await Api.Client.GetAsync($"/api/v1/games/{game.Id}/leaderboard/players/{game.Owner.Id}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        var page = await Api.GetAsync<Application.Common.PagedResult<LeaderboardEntryResponse>>($"/api/v1/games/{game.Id}/leaderboard");
+        page.TotalCount.ShouldBe(0);
     }
 
     [Fact]

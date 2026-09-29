@@ -107,8 +107,8 @@ try
     app.UseRateLimiter(); // after authorization: the score-submit policy partitions by API key
     app.UseRequestTimeouts();
 
-    app.MapApiHealthChecks();
     app.MapEndpointGroups();
+    app.MapApiHealthChecks();
 
     if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     {

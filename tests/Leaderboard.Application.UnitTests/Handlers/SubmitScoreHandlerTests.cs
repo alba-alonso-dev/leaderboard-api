@@ -62,12 +62,12 @@ public sealed class SubmitScoreHandlerTests
     }
 
     [Fact]
-    public async Task Submit_Accepted_UpsertsEntryWithNormalizedSortKey()
+    public async Task Submit_Accepted_UpsertsEntryWithNormalizedRankKey()
     {
         Score? stored = null;
         _scores.Add(Arg.Do<Score>(s => stored = s));
         _leaderboard.GetPlayerRankAsync(_game.Id, _playerId, Arg.Any<CancellationToken>())
-            .Returns(ci => new RankedRow(new LeaderboardRow(_playerId, "ana", 500, 500, _time.GetUtcNow(), stored!.Id), 1));
+            .Returns(ci => new RankedRow(new LeaderboardRow(_playerId, "ana", 500, -500, _time.GetUtcNow(), stored!.Id), 1));
         _leaderboard.CountPlayersAsync(_game.Id, Arg.Any<CancellationToken>()).Returns(1);
 
         var result = await Sut().HandleAsync(Command(), CancellationToken.None);
@@ -75,7 +75,7 @@ public sealed class SubmitScoreHandlerTests
         result.Value.IsPersonalBest.ShouldBeTrue();
         result.Value.Rank.ShouldBe(1);
         result.Value.IsReplay.ShouldBeFalse();
-        await _scores.Received(1).UpsertLeaderboardEntryAsync(stored!, 500, Arg.Any<CancellationToken>());
+        await _scores.Received(1).UpsertLeaderboardEntryAsync(stored!, -500, Arg.Any<CancellationToken>());
     }
 
     [Fact]

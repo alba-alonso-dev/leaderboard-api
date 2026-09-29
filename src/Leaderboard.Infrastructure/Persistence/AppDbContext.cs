@@ -19,6 +19,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<LeaderboardEntry> LeaderboardEntries => Set<LeaderboardEntry>();
 
+    internal DbSet<ReadModels.LeaderboardStats> LeaderboardStats => Set<ReadModels.LeaderboardStats>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("citext");

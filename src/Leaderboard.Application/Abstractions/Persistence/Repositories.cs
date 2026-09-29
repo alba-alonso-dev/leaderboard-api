@@ -67,8 +67,11 @@ public interface IScoreRepository
 
     void Add(Score score);
 
-    /// <summary>Atomically inserts or improves the player's leaderboard entry (INSERT … ON CONFLICT DO UPDATE).</summary>
-    Task UpsertLeaderboardEntryAsync(Score score, long sortKey, CancellationToken cancellationToken);
+    /// <summary>
+    /// Atomically inserts or improves the player's leaderboard entry (INSERT … ON CONFLICT DO UPDATE) and keeps the
+    /// game's player counter in sync.
+    /// </summary>
+    Task UpsertLeaderboardEntryAsync(Score score, long rankKey, CancellationToken cancellationToken);
 
     /// <summary>Rebuilds the player's entry from the accepted score history (after moderation).</summary>
     Task RecalculateLeaderboardEntryAsync(Game game, Guid playerId, CancellationToken cancellationToken);

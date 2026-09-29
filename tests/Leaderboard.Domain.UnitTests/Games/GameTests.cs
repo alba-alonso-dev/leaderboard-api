@@ -27,10 +27,10 @@ public sealed class GameTests
         Should.Throw<DomainException>(() => CreateGame(min: 10, max: 5));
 
     [Theory]
-    [InlineData(ScoreOrder.HigherIsBetter, 500, 500)]
-    [InlineData(ScoreOrder.LowerIsBetter, 500, -500)]
-    public void ToSortKey_NormalizesSoThatGreaterIsAlwaysBetter(ScoreOrder order, long value, long expected) =>
-        CreateGame(order).ToSortKey(value).ShouldBe(expected);
+    [InlineData(ScoreOrder.HigherIsBetter, 500, -500)]
+    [InlineData(ScoreOrder.LowerIsBetter, 500, 500)]
+    public void ToRankKey_NormalizesSoThatLowerIsAlwaysBetter(ScoreOrder order, long value, long expected) =>
+        CreateGame(order).ToRankKey(value).ShouldBe(expected);
 
     [Theory]
     [InlineData(ScoreOrder.HigherIsBetter, 200, 100, true)]

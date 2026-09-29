@@ -20,7 +20,7 @@ Usar **PostgreSQL 18** (imagen oficial `postgres:18-alpine`) con **EF Core 10 + 
 | Capacidad | Uso concreto |
 |---|---|
 | `INSERT … ON CONFLICT DO UPDATE` | Upsert atómico de la mejor marca (`leaderboard_entries`) sin lecturas previas ni bloqueos explícitos. |
-| Índices B-tree compuestos con orden mixto | `(game_id, sort_key DESC, achieved_at, player_id)` sirve Top N, paginación, conteo de rango y ventana relativa. |
+| Índices B-tree compuestos con `INCLUDE` y comparación de tuplas | `(game_id, rank_key, achieved_at, player_id) INCLUDE (best_score, score_id)` sirve Top N y páginas (*Index Only Scan*), el conteo de rango y la ventana relativa (`(…) < (…)`, *Index Scan Backward*). |
 | `citext` | Unicidad de `username`/`email` insensible a mayúsculas sin `LOWER()` en cada consulta. |
 | `xmin` | Concurrencia optimista en `games` sin columna adicional (`If-Match`/`ETag`). |
 | `jsonb` | Metadatos libres de cada puntuación (nivel, duración…) validados como objeto JSON. |
@@ -50,5 +50,5 @@ Usar **PostgreSQL 18** (imagen oficial `postgres:18-alpine`) con **EF Core 10 + 
 
 ## Validación
 
-- `EXPLAIN ANALYZE` de las consultas de ranking en [performance.md](../performance.md): *Index Only Scan* / *Index Scan* sobre `ix_leaderboard_entries_rank`, sin *Seq Scan*.
+- Benchmark k6 con 100 000 jugadores y `EXPLAIN ANALYZE` en [performance.md](../performance.md): p95 < 50 ms en todas las lecturas tras normalizar la clave de ranking (la primera versión, con un índice de direcciones mixtas, no cumplía el objetivo).
 - Test de integración concurrente: 40 envíos paralelos del mismo jugador dejan una sola entrada con el máximo y `submissions_count = 40`.

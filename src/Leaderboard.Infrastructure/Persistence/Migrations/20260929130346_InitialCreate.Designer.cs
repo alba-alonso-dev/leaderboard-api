@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Leaderboard.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260929122639_InitialCreate")]
+    [Migration("20260929130346_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -260,13 +260,13 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("best_score");
 
+                    b.Property<long>("RankKey")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rank_key");
+
                     b.Property<Guid>("ScoreId")
                         .HasColumnType("uuid")
                         .HasColumnName("score_id");
-
-                    b.Property<long>("SortKey")
-                        .HasColumnType("bigint")
-                        .HasColumnName("sort_key");
 
                     b.Property<int>("SubmissionsCount")
                         .HasColumnType("integer")
@@ -281,9 +281,10 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                     b.HasIndex("ScoreId")
                         .HasDatabaseName("ix_leaderboard_entries_score_id");
 
-                    b.HasIndex("GameId", "SortKey", "AchievedAt", "PlayerId")
-                        .IsDescending(false, true, false, false)
+                    b.HasIndex("GameId", "RankKey", "AchievedAt", "PlayerId")
                         .HasDatabaseName("ix_leaderboard_entries_rank");
+
+                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("GameId", "RankKey", "AchievedAt", "PlayerId"), new[] { "BestScore", "ScoreId" });
 
                     b.ToTable("leaderboard_entries", (string)null);
                 });
@@ -343,6 +344,22 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_scores_player_id_game_id_submitted_at");
 
                     b.ToTable("scores", (string)null);
+                });
+
+            modelBuilder.Entity("Leaderboard.Infrastructure.ReadModels.LeaderboardStats", b =>
+                {
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<long>("PlayerCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("player_count");
+
+                    b.HasKey("GameId")
+                        .HasName("pk_leaderboard_stats");
+
+                    b.ToTable("leaderboard_stats", (string)null);
                 });
 
             modelBuilder.Entity("Leaderboard.Domain.Games.Game", b =>
@@ -421,6 +438,16 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_scores_players_player_id");
+                });
+
+            modelBuilder.Entity("Leaderboard.Infrastructure.ReadModels.LeaderboardStats", b =>
+                {
+                    b.HasOne("Leaderboard.Domain.Games.Game", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_leaderboard_stats_games_game_id");
                 });
 #pragma warning restore 612, 618
         }

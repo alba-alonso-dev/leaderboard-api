@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace Leaderboard.Api.Endpoints;
 
 /// <summary>A cohesive set of routes for one feature. Discovered and mapped at startup.</summary>
@@ -10,13 +8,20 @@ public interface IEndpointGroup
 
 internal static class EndpointGroupExtensions
 {
+    /// <summary>Mapping order is also the order of sections in Swagger UI (it follows the user journey).</summary>
+    private static readonly IEndpointGroup[] Groups =
+    [
+        new AuthEndpoints(),
+        new PlayersEndpoints(),
+        new GamesEndpoints(),
+        new ScoresEndpoints(),
+        new LeaderboardEndpoints(),
+        new AdminEndpoints(),
+    ];
+
     public static IEndpointRouteBuilder MapEndpointGroups(this IEndpointRouteBuilder app)
     {
-        var groups = Assembly.GetExecutingAssembly().GetTypes()
-            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IEndpointGroup).IsAssignableFrom(t))
-            .Select(t => (IEndpointGroup)Activator.CreateInstance(t)!);
-
-        foreach (var group in groups)
+        foreach (var group in Groups)
         {
             group.Map(app);
         }

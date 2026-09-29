@@ -1,6 +1,6 @@
 # Estándares de Código, Patrones y Testing
 
-> **Documento:** `docs/coding-standards.md` · **Estado:** Vigente desde la Fase 1 · **Versión:** 1.0  
+> **Documento:** `docs/coding-standards.md` · **Estado:** Vigente (aplicado en v1.0) · **Versión:** 1.1  
 > **Relacionados:** [Requerimientos](requirements.md) · [Arquitectura](architecture.md) · [Roadmap y tareas](roadmap-and-tasks.md)
 
 Estas normas existen para que el código sea **predecible**: cualquier revisor (o entrevistador) debe poder abrir un archivo y saber dónde está cada cosa y por qué. Lo que puede comprobar una herramienta, lo comprueba una herramienta (`.editorconfig`, analizadores, `dotnet format`, tests de arquitectura); este documento cubre el resto.
@@ -19,7 +19,7 @@ Estas normas existen para que el código sea **predecible**: cualquier revisor (
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- XML docs solo donde aportan (API pública/OpenAPI) -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn> <!-- XML docs solo donde aportan (API pública/OpenAPI) -->
   </PropertyGroup>
 </Project>
 ```
@@ -150,7 +150,7 @@ Reglas:
 
 - Un validador por Request/Command, en la misma carpeta del caso de uso: `SubmitScoreCommandValidator`.
 - Validación **sintáctica** (formato, longitudes, rangos genéricos) en validadores; validación **semántica** que requiere estado (slug único, score dentro del rango del juego) en el handler/dominio.
-- Ejecutada por un filtro de endpoint (`ValidationFilter<TRequest>`) en Api y por un decorador en Application (defensa en profundidad); **sin** validación automática por reflexión obsoleta (`FluentValidation.AspNetCore` está deprecado).
+- Ejecutada por un **decorador** de Application (`ValidationCommandDecorator`/`ValidationQueryDecorator`) antes de cada handler: cualquier punto de entrada (HTTP, tests, futuros consumidores) queda validado igual. Devuelve un `ValidationError` que la Api traduce a `ValidationProblemDetails`. **Sin** validación automática por reflexión (`FluentValidation.AspNetCore` está deprecado).
 - Mensajes con `WithErrorCode` cuando el cliente necesita distinguirlos.
 
 ### 3.7 Endpoints (Minimal APIs)
@@ -207,16 +207,16 @@ public sealed class LeaderboardEndpoints : IEndpointGroup
 ```mermaid
 flowchart TB
     A["🔺 Smoke (CI · Docker Compose)<br/>health + swagger · 2-3 checks"]
-    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · ~60 tests"]
-    C["Unitarios (Domain + Application)<br/>reglas, validadores, handlers con fakes · ~150 tests"]
-    D["Arquitectura (NetArchTest)<br/>regla de dependencias, convenciones · ~10 tests"]
+    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · 73 tests"]
+    C["Unitarios (Domain + Application)<br/>reglas, validadores, handlers con fakes · 96 tests"]
+    D["Arquitectura (NetArchTest)<br/>regla de dependencias, convenciones · 10 tests"]
     A --- B --- C
     C --- D
 ```
 
 | Tipo | Proyecto | Qué cubre | Herramientas | Objetivo |
 |---|---|---|---|---|
-| Unitario | `*.Domain.UnitTests`, `*.Application.UnitTests` | Invariantes, `IsBetter`/`SortKey`, validadores, handlers | xUnit v3, Shouldly, NSubstitute, `FakeTimeProvider` | ≥ 80 % líneas en Domain+Application; < 5 s |
+| Unitario | `*.Domain.UnitTests`, `*.Application.UnitTests` | Invariantes, `IsBetter`/`RankKey`, validadores, handlers | xUnit v3, Shouldly, NSubstitute, `FakeTimeProvider` | ≥ 80 % líneas en Domain+Application; < 5 s |
 | Integración | `*.Api.IntegrationTests` | Endpoints extremo a extremo, códigos HTTP, ProblemDetails, auth JWT y HMAC, SQL de ranking, concurrencia | `WebApplicationFactory<Program>`, Testcontainers.PostgreSql, Respawn | Cada endpoint: camino feliz + errores principales |
 | Arquitectura | `*.ArchitectureTests` | Regla de dependencias, `sealed`, sufijos | NetArchTest.Rules | 100 % verde siempre |
 | Smoke | Job CI `docker` | Imagen arranca, `ready` + Swagger | `docker compose up --wait`, `curl` | Cada PR |
@@ -294,12 +294,14 @@ public void Domain_ShouldNotDependOnAnyOtherLayer() =>
 |---|---|---|---|
 | ORM / PostgreSQL | `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `EFCore.NamingConventions` | MIT / PostgreSQL / Apache-2.0 | Infrastructure |
 | JWT | `Microsoft.AspNetCore.Authentication.JwtBearer` | MIT | Api / Infrastructure |
-| Hash de contraseñas | `Microsoft.Extensions.Identity.Core` (`PasswordHasher<T>`) | MIT | Infrastructure |
+| Hash de contraseñas | `PasswordHasher<T>` (framework compartido `Microsoft.AspNetCore.App`, sin paquete extra) | MIT | Infrastructure |
 | Validación | `FluentValidation`, `FluentValidation.DependencyInjectionExtensions` | Apache-2.0 | Application |
 | DI scanning / decoradores | `Scrutor` | MIT | Application / Api |
 | OpenAPI | `Microsoft.AspNetCore.OpenApi`, `Swashbuckle.AspNetCore.SwaggerUI` | MIT | Api |
 | Logging | `Serilog.AspNetCore`, `Serilog.Formatting.Compact` | Apache-2.0 | Api |
-| Health checks | `AspNetCore.HealthChecks.NpgSql` | Apache-2.0 | Api |
-| Tests | `xunit.v3`, `Shouldly`, `NSubstitute`, `Testcontainers.PostgreSql`, `Respawn`, `NetArchTest.Rules`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.Extensions.TimeProvider.Testing`, `coverlet.collector` | Apache-2.0 / BSD / MIT | tests |
+| Health checks | `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` | MIT | Api |
+| Tests | `xunit.v3`, `Shouldly`, `NSubstitute`, `Testcontainers.PostgreSql`, `Respawn`, `NetArchTest.Rules`, `Microsoft.AspNetCore.Mvc.Testing`, `Microsoft.Extensions.TimeProvider.Testing`, `Microsoft.Testing.Extensions.CodeCoverage` (runner: Microsoft.Testing.Platform) | Apache-2.0 / BSD / MIT | tests |
+
+Herramientas locales (`dotnet-tools.json`): `dotnet-ef` (migraciones) y `dotnet-reportgenerator-globaltool` (informe de cobertura fusionado).
 
 Añadir una dependencia nueva requiere justificarla en el PR (propósito, licencia, mantenimiento activo).

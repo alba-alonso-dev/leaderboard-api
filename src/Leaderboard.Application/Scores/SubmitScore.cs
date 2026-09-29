@@ -100,7 +100,7 @@ internal sealed class SubmitScoreCommandHandler(
                 {
                     scores.Add(score);
                     await unitOfWork.SaveChangesAsync(ct);
-                    await scores.UpsertLeaderboardEntryAsync(score, game.ToSortKey(score.Value), ct);
+                    await scores.UpsertLeaderboardEntryAsync(score, game.ToRankKey(score.Value), ct);
                     return true;
                 },
                 cancellationToken);

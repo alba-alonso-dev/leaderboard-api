@@ -26,13 +26,18 @@ ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 REPO_URL = "https://github.com/alba-alonso-dev/leaderboard-api"
 
-# Order defines the sidebar navigation.
+# Order defines the sidebar navigation: (path relative to docs/, label, hint, group).
 PAGES = [
-    ("index.md", "Inicio", "Índice de la documentación de diseño"),
-    ("requirements.md", "Requerimientos", "RF, RNF e historias de usuario"),
-    ("architecture.md", "Arquitectura", "Capas, datos, endpoints y seguridad"),
-    ("roadmap-and-tasks.md", "Roadmap y tareas", "Fases Noviembre → Marzo"),
-    ("coding-standards.md", "Estándares de código", "Convenciones, patrones y testing"),
+    ("index.md", "Inicio", "Índice de la documentación", "Diseño"),
+    ("requirements.md", "Requerimientos", "RF, RNF e historias de usuario", "Diseño"),
+    ("architecture.md", "Arquitectura", "Capas, datos, endpoints y seguridad", "Diseño"),
+    ("roadmap-and-tasks.md", "Roadmap y tareas", "Fases Noviembre → Marzo", "Diseño"),
+    ("coding-standards.md", "Estándares de código", "Convenciones, patrones y testing", "Diseño"),
+    ("performance.md", "Rendimiento", "Benchmark k6 y planes de ejecución", "Resultados"),
+    ("adr/0001-postgresql.md", "ADR-001 · PostgreSQL", "Almacén principal", "Decisiones (ADR)"),
+    ("adr/0002-clean-architecture.md", "ADR-002 · Clean Architecture", "Estructura en capas", "Decisiones (ADR)"),
+    ("adr/0003-anti-cheat.md", "ADR-003 · Anti-cheat", "HMAC, nonce, rate limiting", "Decisiones (ADR)"),
+    ("adr/0004-future-improvements.md", "ADR-004 · Mejoras futuras", "Redis, tiempo real, microservicios", "Decisiones (ADR)"),
 ]
 
 CSS = """
@@ -172,12 +177,10 @@ TEMPLATE = """<!doctype html>
 <a class="skip-link" href="#main">Saltar al contenido</a>
 <div class="layout">
   <aside class="sidebar" aria-label="Navegación de la documentación">
-    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <a class="brand" href="{root}index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
-      <ul>
 {nav}
-      </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
       <h2>En esta página</h2>
@@ -190,7 +193,7 @@ TEMPLATE = """<!doctype html>
 {body}
     </article>
     <footer class="page-footer">
-      <span>Generado desde <a href="{source}"><code>docs/{source}</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span>Generado desde <a href="{source_name}"><code>docs/{source}</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
       <span><a href="{repo}">Repositorio</a> · <a href="{repo}/blob/main/README.md">README</a></span>
     </footer>
   </main>
@@ -201,9 +204,38 @@ TEMPLATE = """<!doctype html>
 """
 
 MERMAID_RE = re.compile(r'<pre><code class="language-mermaid">(.*?)</code></pre>', re.S)
-MD_LINK_RE = re.compile(r'href="(?!https?://|\.\./)([\w\-/]+)\.md(#[^"]*)?"')
+HREF_RE = re.compile(r'href="([^"#]+\.md)(#[^"]*)?"')
 TABLE_RE = re.compile(r"(<table>.*?</table>)", re.S)
 TASK_RE = re.compile(r"<li>(<p>)?\[([ xX])\]\s*")
+
+
+def rewrite_link(page_dir: Path, target: str, fragment: str) -> str:
+    """Links between documentation pages point to the generated HTML; links outside docs/ point to GitHub.
+    Links written as `./file.md` are explicit links to the Markdown source and are kept."""
+    if target.startswith(("http://", "https://", "./")):
+        return f'href="{target}{fragment}"'
+    resolved = (page_dir / target).resolve()
+    if resolved.is_relative_to(DOCS):
+        return f'href="{target[:-3]}.html{fragment}"'
+    return f'href="{REPO_URL}/blob/main/{resolved.relative_to(ROOT).as_posix()}{fragment}"'
+
+
+def render_nav(current: str) -> str:
+    depth = current.count("/")
+    root = "../" * depth
+    lines, group = [], None
+    for path, label, hint, page_group in PAGES:
+        if page_group != group:
+            if group is not None:
+                lines.append("      </ul>")
+            lines.append(f"      <h2>{html.escape(page_group)}</h2>\n      <ul>")
+            group = page_group
+        attr = ' aria-current="page"' if path == current else ""
+        lines.append(
+            f'        <li><a href="{root}{path[:-3]}.html"{attr}>{html.escape(label)}<small>{html.escape(hint)}</small></a></li>'
+        )
+    lines.append("      </ul>")
+    return "\n".join(lines)
 
 
 def render_page(md_file: Path) -> str:
@@ -215,8 +247,7 @@ def render_page(md_file: Path) -> str:
     body = md.convert(source)
 
     body = MERMAID_RE.sub(lambda m: f'<pre class="mermaid">{m.group(1)}</pre>', body)
-    body = MD_LINK_RE.sub(lambda m: f'href="{m.group(1)}.html{m.group(2) or ""}"', body)
-    body = body.replace('href="../README.md', f'href="{REPO_URL}/blob/main/README.md')
+    body = HREF_RE.sub(lambda m: rewrite_link(md_file.parent, m.group(1), m.group(2) or ""), body)
     body = TABLE_RE.sub(r'<div class="table-wrap">\1</div>', body)
     body = TASK_RE.sub(
         lambda m: '<li class="task">' + (m.group(1) or "")
@@ -226,23 +257,19 @@ def render_page(md_file: Path) -> str:
 
     title_match = re.search(r"^#\s+(.+)$", source, re.M)
     title = title_match.group(1).strip() if title_match else md_file.stem
-    page = next(p for p in PAGES if p[0] == md_file.name)
-
-    nav_items = []
-    for file, label, hint in PAGES:
-        current = ' aria-current="page"' if file == md_file.name else ""
-        nav_items.append(
-            f'        <li><a href="{file[:-3]}.html"{current}>{html.escape(label)}<small>{html.escape(hint)}</small></a></li>'
-        )
+    relative = md_file.relative_to(DOCS).as_posix()
+    page = next(p for p in PAGES if p[0] == relative)
 
     return TEMPLATE.format(
         title=html.escape(title),
         description=html.escape(page[2]),
         css=CSS,
-        nav="\n".join(nav_items),
+        nav=render_nav(relative),
+        root="../" * relative.count("/"),
         toc=md.toc,
         body=body,
-        source=md_file.name,
+        source=relative,
+        source_name=md_file.name,
         repo=REPO_URL,
         script=SCRIPT,
     )
@@ -254,7 +281,7 @@ def main() -> int:
     args = parser.parse_args()
 
     stale = []
-    for file, _, _ in PAGES:
+    for file, *_ in PAGES:
         md_file = DOCS / file
         out_file = md_file.with_suffix(".html")
         rendered = render_page(md_file)

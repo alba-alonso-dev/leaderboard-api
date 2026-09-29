@@ -106,12 +106,24 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <a class="brand" href="index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
       <ul>
-        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="index.html">Inicio<small>Índice de la documentación</small></a></li>
         <li><a href="requirements.html" aria-current="page">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
         <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
         <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
         <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
       </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
@@ -154,8 +166,9 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <article class="content">
 <h1 id="analisis-de-requerimientos">Análisis de Requerimientos<a class="headerlink" href="#analisis-de-requerimientos" title="Enlace a esta sección">#</a></h1>
 <blockquote>
-<p><strong>Documento:</strong> <code>docs/requirements.md</code> · <strong>Estado:</strong> Aprobado para Fase 1 (Noviembre) · <strong>Versión:</strong> 1.0<br />
+<p><strong>Documento:</strong> <code>docs/requirements.md</code> · <strong>Estado:</strong> Implementado en v1.0 · <strong>Versión:</strong> 1.1<br />
 <strong>Relacionados:</strong> <a href="architecture.html">Arquitectura</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a> · <a href="coding-standards.html">Estándares de código</a></p>
+<p><strong>Estado de implementación (v1.0):</strong> todos los requerimientos <em>Must</em> y <em>Should</em> están implementados y cubiertos por tests. De los <em>Could</em>, RF-33 (moderación) está implementado; <strong>RF-32 (heurística de plausibilidad → <code>PendingReview</code>) queda pendiente</strong> y se describe en <a href="adr/0004-future-improvements.html">ADR-004</a>. RNF-01 se verificó con k6 (<a href="performance.html">performance.md</a>).</p>
 </blockquote>
 <h2 id="1-contexto-y-objetivo">1. Contexto y objetivo<a class="headerlink" href="#1-contexto-y-objetivo" title="Enlace a esta sección">#</a></h2>
 <p><strong>Leaderboard REST API</strong> es un servicio backend que permite a estudios y desarrolladores de videojuegos:</p>

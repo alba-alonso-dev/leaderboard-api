@@ -14,8 +14,8 @@ public sealed class LeaderboardEntry
 
     public long BestScore { get; private set; }
 
-    /// <summary>Normalized key: greater is always better (see <see cref="Games.Game.ToSortKey"/>).</summary>
-    public long SortKey { get; private set; }
+    /// <summary>Normalized key: lower is always better (see <see cref="Games.Game.ToRankKey"/>).</summary>
+    public long RankKey { get; private set; }
 
     public Guid ScoreId { get; private set; }
 

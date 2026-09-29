@@ -95,11 +95,12 @@ public sealed class Game
     }
 
     /// <summary>
-    /// Normalizes a score so that "greater sort key = better" regardless of <see cref="ScoreOrder"/>.
-    /// A single descending index then serves both orders.
+    /// Normalizes a score so that "lower rank key = better" regardless of <see cref="ScoreOrder"/>.
+    /// Ranking order is then (rank_key, achieved_at, player_id) ascending: one all-ascending index serves both
+    /// orders and supports row-value keyset comparisons.
     /// </summary>
-    public long ToSortKey(long value) => ScoreOrder == ScoreOrder.HigherIsBetter ? value : checked(-value);
+    public long ToRankKey(long value) => ScoreOrder == ScoreOrder.LowerIsBetter ? value : checked(-value);
 
     /// <summary>Whether <paramref name="candidate"/> beats <paramref name="current"/> for this game.</summary>
-    public bool IsBetter(long candidate, long current) => ToSortKey(candidate) > ToSortKey(current);
+    public bool IsBetter(long candidate, long current) => ToRankKey(candidate) < ToRankKey(current);
 }

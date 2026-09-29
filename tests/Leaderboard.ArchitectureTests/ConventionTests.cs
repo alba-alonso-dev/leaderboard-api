@@ -68,6 +68,20 @@ public sealed class ConventionTests
     }
 
     [Fact]
+    public void ApiEndpointGroups_AreAllMapped()
+    {
+        var groups = ApiAssembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(Leaderboard.Api.Endpoints.IEndpointGroup).IsAssignableFrom(t))
+            .ToList();
+        var mapped = typeof(Leaderboard.Api.Endpoints.IEndpointGroup).Assembly
+            .GetType("Leaderboard.Api.Endpoints.EndpointGroupExtensions")!
+            .GetField("Groups", BindingFlags.NonPublic | BindingFlags.Static)!
+            .GetValue(null) as Leaderboard.Api.Endpoints.IEndpointGroup[];
+
+        mapped.ShouldNotBeNull().Select(g => g.GetType()).ShouldBe(groups, ignoreOrder: true);
+    }
+
+    [Fact]
     public void ApiEndpointGroups_AreSealed()
     {
         var result = Types.InAssembly(ApiAssembly).That().ImplementInterface(typeof(Leaderboard.Api.Endpoints.IEndpointGroup))

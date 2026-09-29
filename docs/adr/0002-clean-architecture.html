@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Índice de la documentación">
-<title>Documentación de diseño · Leaderboard REST API · Leaderboard API</title>
+<meta name="description" content="Estructura en capas">
+<title>ADR-002 · Adopción de Clean Architecture · Leaderboard API</title>
 <link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <style>
@@ -103,35 +103,37 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <a class="skip-link" href="#main">Saltar al contenido</a>
 <div class="layout">
   <aside class="sidebar" aria-label="Navegación de la documentación">
-    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <a class="brand" href="../index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
       <h2>Diseño</h2>
       <ul>
-        <li><a href="index.html" aria-current="page">Inicio<small>Índice de la documentación</small></a></li>
-        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
-        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
-        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
-        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+        <li><a href="../index.html">Inicio<small>Índice de la documentación</small></a></li>
+        <li><a href="../requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="../architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="../roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="../coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
       </ul>
       <h2>Resultados</h2>
       <ul>
-        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="../performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
-        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
-        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
-        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
-        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
+        <li><a href="../adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="../adr/0002-clean-architecture.html" aria-current="page">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="../adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="../adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
       </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
       <h2>En esta página</h2>
 <div class="toc">
 <ul>
-<li><a href="#decisiones-de-arquitectura-adr">Decisiones de arquitectura (ADR)</a></li>
-<li><a href="#lectura-recomendada">Lectura recomendada</a></li>
+<li><a href="#contexto">Contexto</a></li>
+<li><a href="#decision">Decisión</a></li>
+<li><a href="#alternativas-consideradas">Alternativas consideradas</a></li>
+<li><a href="#consecuencias">Consecuencias</a></li>
 </ul>
 </div>
 
@@ -140,85 +142,81 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
   </aside>
   <main id="main">
     <article class="content">
-<h1 id="documentacion-de-diseno-leaderboard-rest-api">Documentación de diseño · Leaderboard REST API<a class="headerlink" href="#documentacion-de-diseno-leaderboard-rest-api" title="Enlace a esta sección">#</a></h1>
-<p>Punto de entrada a la documentación de <strong>análisis, diseño, decisiones y resultados</strong> del proyecto (v1.0 implementada). Cada documento existe en Markdown (fuente, versionado junto al código) y en HTML navegable (generado con <code>scripts/build_docs.py</code>).</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Documento</th>
-<th>Qué responde</th>
-<th>Markdown</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="requirements.html">Requerimientos</a></td>
-<td>¿Qué debe hacer el sistema y con qué calidad? Actores, RF, RNF medibles, historias de usuario en Gherkin, fuera de alcance.</td>
-<td><a href="./requirements.md">requirements.md</a></td>
-</tr>
-<tr>
-<td><a href="architecture.html">Arquitectura y diseño</a></td>
-<td>¿Cómo se construye? Capas Clean Architecture, modelo E/R, contrato REST, errores, seguridad JWT vs API Key + HMAC.</td>
-<td><a href="./architecture.md">architecture.md</a></td>
-</tr>
-<tr>
-<td><a href="roadmap-and-tasks.html">Roadmap y tareas</a></td>
-<td>¿Cuándo y en qué orden? Fases Noviembre → Marzo, checklists por tarea, trazabilidad y riesgos.</td>
-<td><a href="./roadmap-and-tasks.md">roadmap-and-tasks.md</a></td>
-</tr>
-<tr>
-<td><a href="coding-standards.html">Estándares de código</a></td>
-<td>¿Cómo se escribe y se prueba? Convenciones C#, CQRS liviano, Repository, Result + ProblemDetails, pirámide de tests.</td>
-<td><a href="./coding-standards.md">coding-standards.md</a></td>
-</tr>
-<tr>
-<td><a href="performance.html">Rendimiento</a></td>
-<td>¿Cumple RNF-01? Benchmark k6 con 100 000 jugadores, antes/después y planes de ejecución.</td>
-<td><a href="./performance.md">performance.md</a></td>
-</tr>
-</tbody>
-</table></div>
-<h2 id="decisiones-de-arquitectura-adr">Decisiones de arquitectura (ADR)<a class="headerlink" href="#decisiones-de-arquitectura-adr" title="Enlace a esta sección">#</a></h2>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>ADR</th>
-<th>Decisión</th>
-<th>Markdown</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL</a></td>
-<td>PostgreSQL 18 como almacén principal (upsert atómico, índices con <code>INCLUDE</code>, <code>citext</code>, <code>xmin</code>).</td>
-<td><a href="./adr/0001-postgresql.md">0001-postgresql.md</a></td>
-</tr>
-<tr>
-<td><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture</a></td>
-<td>Cuatro capas con dependencias hacia el dominio, CQRS liviano sin mediador, límites verificados por tests.</td>
-<td><a href="./adr/0002-clean-architecture.md">0002-clean-architecture.md</a></td>
-</tr>
-<tr>
-<td><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat</a></td>
-<td>API Key + HMAC-SHA256, nonce idempotente, rate limiting, plausibilidad y moderación.</td>
-<td><a href="./adr/0003-anti-cheat.md">0003-anti-cheat.md</a></td>
-</tr>
-<tr>
-<td><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras</a></td>
-<td>Redis, tiempo real, microservicios y frontend: disparadores medibles y puntos de extensión.</td>
-<td><a href="./adr/0004-future-improvements.md">0004-future-improvements.md</a></td>
-</tr>
-</tbody>
-</table></div>
-<h2 id="lectura-recomendada">Lectura recomendada<a class="headerlink" href="#lectura-recomendada" title="Enlace a esta sección">#</a></h2>
+<h1 id="adr-002-adopcion-de-clean-architecture">ADR-002 · Adopción de Clean Architecture<a class="headerlink" href="#adr-002-adopcion-de-clean-architecture" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Estado:</strong> Aceptado · <strong>Fecha:</strong> 2027-01 · <strong>Decisores:</strong> autora del proyecto<br />
+<strong>Relacionados:</strong> <a href="../architecture.html#2-estructura-de-capas-clean-architecture">Arquitectura §2</a> · <a href="../coding-standards.html#3-patrones-aplicados">Estándares §3</a></p>
+</blockquote>
+<h2 id="contexto">Contexto<a class="headerlink" href="#contexto" title="Enlace a esta sección">#</a></h2>
+<p>El proyecto es pequeño (≈ 20 endpoints) pero su objetivo es <strong>demostrar criterio de diseño</strong> en entrevistas técnicas y servir de base evolutiva (tiempo real, caché, extracción de servicios). Necesitamos:</p>
 <ul>
-<li><strong>Reclutador / tech lead con 5 minutos:</strong> <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a> → <a href="architecture.html#1-vision-general">Arquitectura §1–2</a> → <a href="roadmap-and-tasks.html#1-vision-temporal">Roadmap §1</a>.</li>
-<li><strong>Revisor técnico:</strong> <a href="architecture.html#3-modelo-de-datos">Modelo de datos</a> → <a href="architecture.html#4-diseno-de-endpoints-restful">Endpoints</a> → <a href="architecture.html#5-estrategia-de-seguridad">Seguridad</a> → <a href="adr/0003-anti-cheat.html">ADR-003</a> → <a href="performance.html">Rendimiento</a> → <a href="coding-standards.html#4-estrategia-de-testing">Testing</a>.</li>
-<li><strong>Quien vaya a implementar:</strong> <a href="roadmap-and-tasks.html">Roadmap</a> → <a href="coding-standards.html">Estándares</a> → <a href="requirements.html">Requerimientos</a> (criterios de aceptación).</li>
+<li>Reglas de negocio (orden de puntuación, rango permitido, idempotencia, rotación de tokens) testeables <strong>sin HTTP ni base de datos</strong>.</li>
+<li>Poder sustituir detalles de infraestructura (PostgreSQL → caché Redis para rankings, HS256 → RS256) sin tocar casos de uso.</li>
+<li>Límites verificables automáticamente, no solo por convención.</li>
+</ul>
+<p>El roadmap original planteaba empezar con un único proyecto y refactorizar en enero. Al ejecutar todas las fases de forma consecutiva se partió directamente de la estructura final, con los tests de integración como contrato.</p>
+<h2 id="decision">Decisión<a class="headerlink" href="#decision" title="Enlace a esta sección">#</a></h2>
+<p>Cuatro proyectos con dependencias hacia dentro, verificadas por tests de arquitectura (NetArchTest):</p>
+<pre class="mermaid">flowchart LR
+    Api --&gt; Application
+    Api --&gt; Infrastructure
+    Infrastructure --&gt; Application
+    Application --&gt; Domain
+</pre>
+<ul>
+<li><strong>Domain</strong>: entidades con invariantes (<code>Game.EnsureAcceptsScore</code>, <code>Game.ToRankKey</code>, <code>RefreshToken.WasRotated</code>), errores de dominio, <code>Result&lt;T&gt;</code>. Sin dependencias NuGet.</li>
+<li><strong>Application</strong>: casos de uso como <em>handlers</em> (CQRS liviano sin mediador), validadores FluentValidation, puertos (<code>IScoreRepository</code>, <code>ILeaderboardReadService</code>, <code>ITokenService</code>, <code>IApiKeySecretProtector</code>…). Decoradores de validación y logging vía Scrutor.</li>
+<li><strong>Infrastructure</strong>: EF Core, SQL de ranking, JWT, PBKDF2, Data Protection.</li>
+<li><strong>Api</strong>: Minimal APIs, esquemas de autenticación, ProblemDetails, rate limiting, OpenAPI, health checks.</li>
+</ul>
+<h2 id="alternativas-consideradas">Alternativas consideradas<a class="headerlink" href="#alternativas-consideradas" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Alternativa</th>
+<th>A favor</th>
+<th>En contra</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Monolito en un proyecto (N-capas por carpetas)</strong></td>
+<td>Mínima ceremonia; rápido para un MVP.</td>
+<td>Nada impide que un endpoint use <code>DbContext</code> directamente; los límites se erosionan.</td>
+</tr>
+<tr>
+<td><strong>Vertical Slice Architecture</strong></td>
+<td>Cohesión por feature; menos abstracciones.</td>
+<td>Con tan pocas features, la ganancia es pequeña; las reglas de dominio compartidas (orden de puntuación) acaban duplicadas o en un «Common» difuso.</td>
+</tr>
+<tr>
+<td><strong>Clean Architecture + MediatR</strong></td>
+<td>Patrón muy conocido.</td>
+<td>MediatR es de licencia comercial desde v13 y añade indirección (<code>ISender.Send</code>) sin beneficio a esta escala.</td>
+</tr>
+<tr>
+<td><strong>Clean Architecture con handlers inyectados</strong> ✅</td>
+<td>Límites verificables, dominio puro, navegación directa (<em>Go to definition</em>).</td>
+<td>Más proyectos y tipos; hay que evitar la sobre-abstracción.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="consecuencias">Consecuencias<a class="headerlink" href="#consecuencias" title="Enlace a esta sección">#</a></h2>
+<p><strong>Positivas</strong></p>
+<ul>
+<li>90+ tests unitarios de Domain y Application se ejecutan en segundos sin Docker.</li>
+<li>La lógica de firma HMAC vive en Application (<code>ApiKeyAuthenticator</code>) y se prueba con <code>FakeTimeProvider</code>; el handler HTTP solo traduce cabeceras.</li>
+<li>Los tests de arquitectura fallan el build si Application referencia EF Core o si un endpoint accede a <code>DbContext</code>.</li>
+</ul>
+<p><strong>Negativas / límites deliberados</strong></p>
+<ul>
+<li><strong>Lecturas de ranking fuera del patrón repositorio</strong>: <code>ILeaderboardReadService</code> devuelve proyecciones directamente (CQRS). Forzar agregados aquí penalizaría rendimiento sin aportar invariantes.</li>
+<li><strong>No hay <code>IRepository&lt;T&gt;</code> genérico</strong> ni <code>IQueryable</code> en Application: cada repositorio expone métodos con intención de negocio.</li>
+<li><strong>Autorización de propietario en el caso de uso</strong> (<code>GetOwnedAsync</code> → <code>404</code>), no con <code>IAuthorizationHandler</code> por recurso: el dato necesario se carga igualmente en el handler y así la regla queda testeada en un único sitio.</li>
 </ul>
     </article>
     <footer class="page-footer">
-      <span>Generado desde <a href="index.md"><code>docs/index.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span>Generado desde <a href="0002-clean-architecture.md"><code>docs/adr/0002-clean-architecture.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
       <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
     </footer>
   </main>

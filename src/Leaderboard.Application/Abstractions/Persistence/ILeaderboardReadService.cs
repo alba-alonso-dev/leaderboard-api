@@ -17,6 +17,6 @@ public interface ILeaderboardReadService
     Task<IReadOnlyList<LeaderboardRow>> GetBelowAsync(Guid gameId, LeaderboardRow target, int count, CancellationToken cancellationToken);
 }
 
-public sealed record LeaderboardRow(Guid PlayerId, string Username, long BestScore, long SortKey, DateTimeOffset AchievedAt, Guid ScoreId);
+public sealed record LeaderboardRow(Guid PlayerId, string Username, long BestScore, long RankKey, DateTimeOffset AchievedAt, Guid ScoreId);
 
 public sealed record RankedRow(LeaderboardRow Row, long Rank);

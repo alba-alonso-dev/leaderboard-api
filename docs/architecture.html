@@ -106,12 +106,24 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <a class="brand" href="index.html">🏆 Leaderboard API</a>
     <p class="brand-sub">Documentación de diseño</p>
     <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
       <ul>
-        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="index.html">Inicio<small>Índice de la documentación</small></a></li>
         <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
         <li><a href="architecture.html" aria-current="page">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
         <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
         <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
       </ul>
     </nav>
     <nav class="toc" aria-label="En esta página">
@@ -169,7 +181,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <article class="content">
 <h1 id="arquitectura-y-diseno">Arquitectura y Diseño<a class="headerlink" href="#arquitectura-y-diseno" title="Enlace a esta sección">#</a></h1>
 <blockquote>
-<p><strong>Documento:</strong> <code>docs/architecture.md</code> · <strong>Estado:</strong> Diseño objetivo (se implementa progresivamente Nov → Mar) · <strong>Versión:</strong> 1.0<br />
+<p><strong>Documento:</strong> <code>docs/architecture.md</code> · <strong>Estado:</strong> Implementado (v1.0) · <strong>Versión:</strong> 1.1<br />
 <strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a> · <a href="coding-standards.html">Estándares de código</a></p>
 </blockquote>
 <h2 id="1-vision-general">1. Visión general<a class="headerlink" href="#1-vision-general" title="Enlace a esta sección">#</a></h2>
@@ -330,6 +342,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     GAME ||--o{ GAME_API_KEY : &quot;autoriza&quot;
     GAME ||--o{ SCORE : &quot;recibe&quot;
     GAME ||--o{ LEADERBOARD_ENTRY : &quot;clasifica&quot;
+    GAME ||--o| LEADERBOARD_STATS : &quot;resume&quot;
     GAME_API_KEY ||--o{ SCORE : &quot;firma&quot;
     SCORE ||--o| LEADERBOARD_ENTRY : &quot;es mejor marca de&quot;
 
@@ -384,11 +397,15 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
         smallint status &quot;Accepted · PendingReview · Rejected&quot;
         timestamptz submitted_at
     }
+    LEADERBOARD_STATS {
+        uuid game_id PK, FK
+        bigint player_count &quot;exacto, mismo statement que el upsert&quot;
+    }
     LEADERBOARD_ENTRY {
         uuid game_id PK, FK
         uuid player_id PK, FK
         bigint best_score
-        bigint sort_key &quot;normalizado: siempre DESC&quot;
+        bigint rank_key &quot;normalizado: menor es mejor&quot;
         uuid score_id FK
         timestamptz achieved_at
         int submissions_count
@@ -408,8 +425,12 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <td>Ranking = 1 fila por jugador → consultas de posición O(log n + k) sin <code>GROUP BY</code> sobre millones de eventos. El histórico permite auditoría y recálculo (RF-33).</td>
 </tr>
 <tr>
-<td><strong><code>sort_key</code> normalizado</strong></td>
-<td><code>sort_key = value</code> si <code>HigherIsBetter</code>, <code>-value</code> si <code>LowerIsBetter</code>. Un único índice <code>(game_id, sort_key DESC, achieved_at ASC, player_id ASC)</code> sirve a ambos órdenes y al desempate.</td>
+<td><strong><code>rank_key</code> normalizado (menor es mejor)</strong></td>
+<td><code>rank_key = -value</code> si <code>HigherIsBetter</code>, <code>value</code> si <code>LowerIsBetter</code>. El orden del ranking es <code>(rank_key, achieved_at, player_id)</code> <strong>todo ascendente</strong>: un único índice sirve a ambos órdenes y al desempate, y admite comparaciones de tuplas <code>(…) &lt; (…)</code> como búsquedas de rango. Ver <a href="performance.html">performance.md</a>.</td>
+</tr>
+<tr>
+<td><strong><code>leaderboard_stats.player_count</code></strong></td>
+<td>Total exacto de jugadores por juego sin <code>COUNT(*)</code>: se incrementa en la misma sentencia del upsert cuando el jugador obtiene su primera entrada (<code>RETURNING (xmax = 0)</code>).</td>
 </tr>
 <tr>
 <td><strong>UUIDv7 (<code>Guid.CreateVersion7()</code>)</strong></td>
@@ -454,8 +475,8 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 </tr>
 <tr>
 <td><code>leaderboard_entries</code></td>
-<td><code>ix_lb_rank (game_id, sort_key DESC, achieved_at ASC, player_id ASC)</code></td>
-<td>Top N, paginación, cálculo de rango, ventana relativa.</td>
+<td><code>ix_leaderboard_entries_rank (game_id, rank_key, achieved_at, player_id) INCLUDE (best_score, score_id)</code></td>
+<td>Top N y páginas (<em>Index Only Scan</em>), conteo de rango y ventana relativa (búsquedas por tupla).</td>
 </tr>
 <tr>
 <td><code>scores</code></td>
@@ -485,28 +506,32 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 </tbody>
 </table></div>
 <h3 id="34-consultas-criticas-referencia-de-implementacion">3.4 Consultas críticas (referencia de implementación)<a class="headerlink" href="#34-consultas-criticas-referencia-de-implementacion" title="Enlace a esta sección">#</a></h3>
-<p><strong>Upsert de mejor marca</strong> (dentro de la transacción del envío; atómico frente a concurrencia):</p>
-<pre><code class="language-sql">INSERT INTO leaderboard_entries (game_id, player_id, best_score, sort_key, score_id, achieved_at, submissions_count)
-VALUES (@gameId, @playerId, @value, @sortKey, @scoreId, @now, 1)
-ON CONFLICT (game_id, player_id) DO UPDATE
-SET submissions_count = leaderboard_entries.submissions_count + 1,
-    best_score  = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
-    sort_key    = GREATEST(EXCLUDED.sort_key, leaderboard_entries.sort_key),
-    score_id    = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
-    achieved_at = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END
-RETURNING best_score, (xmax = 0) AS inserted, score_id = @scoreId AS is_personal_best;
+<p><strong>Upsert de mejor marca + contador</strong> (una sola sentencia dentro de la transacción del envío; atómica frente a concurrencia):</p>
+<pre><code class="language-sql">WITH upsert AS (
+    INSERT INTO leaderboard_entries (game_id, player_id, best_score, rank_key, score_id, achieved_at, submissions_count)
+    VALUES (@gameId, @playerId, @value, @rankKey, @scoreId, @now, 1)
+    ON CONFLICT (game_id, player_id) DO UPDATE SET
+        submissions_count = leaderboard_entries.submissions_count + 1,
+        best_score  = CASE WHEN EXCLUDED.rank_key &lt; leaderboard_entries.rank_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
+        score_id    = CASE WHEN EXCLUDED.rank_key &lt; leaderboard_entries.rank_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
+        achieved_at = CASE WHEN EXCLUDED.rank_key &lt; leaderboard_entries.rank_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END,
+        rank_key    = LEAST(EXCLUDED.rank_key, leaderboard_entries.rank_key)
+    RETURNING (xmax = 0) AS inserted
+)
+INSERT INTO leaderboard_stats (game_id, player_count)
+SELECT @gameId, 1 FROM upsert WHERE inserted
+ON CONFLICT (game_id) DO UPDATE SET player_count = leaderboard_stats.player_count + 1;
 </code></pre>
-<p><strong>Rango absoluto</strong> (1 + número de entradas estrictamente mejores, con desempate):</p>
+<p><strong>Rango absoluto</strong> (1 + entradas estrictamente por delante; la comparación de tuplas usa el índice):</p>
 <pre><code class="language-sql">SELECT COUNT(*) + 1
 FROM leaderboard_entries
 WHERE game_id = @gameId
-  AND (sort_key &gt; @sortKey
-       OR (sort_key = @sortKey AND achieved_at &lt; @achievedAt)
-       OR (sort_key = @sortKey AND achieved_at = @achievedAt AND player_id &lt; @playerId));
+  AND (rank_key, achieved_at, player_id) &lt; (@rankKey, @achievedAt, @playerId);
 </code></pre>
-<p><strong>Ventana relativa</strong> (<code>k</code> por encima y <code>k</code> por debajo): dos consultas <em>keyset</em> sobre <code>ix_lb_rank</code> (<code>ORDER BY … LIMIT k</code> hacia arriba y hacia abajo) unidas en memoria, con rangos derivados del rango absoluto. Evita <code>ROW_NUMBER()</code> sobre toda la tabla.</p>
+<p><strong>Ventana relativa</strong> (<code>k</code> por encima y <code>k</code> por debajo): dos búsquedas <em>keyset</em> sobre el índice (<code>… &lt; (…) ORDER BY … DESC LIMIT k</code> y <code>… &gt; (…) ORDER BY … LIMIT k</code>, <em>Index Scan Backward</em> en 0,1 ms) con rangos derivados del rango absoluto. Evita <code>ROW_NUMBER()</code> sobre toda la tabla.</p>
+<p><strong>Top N / páginas</strong>: se pagina el índice primero (<code>ORDER BY rank_key, achieved_at, player_id OFFSET … LIMIT …</code>) y solo después se unen los <code>username</code> de las filas devueltas.</p>
 <blockquote>
-<p><strong>Límite conocido:</strong> <code>COUNT(*)</code> es O(rango) sobre el índice. Para ≤ 1 M de entradas por juego cumple RNF-01. Por encima, la alternativa documentada es Redis Sorted Sets (ADR de mejoras futuras).</p>
+<p><strong>Límites conocidos:</strong> el rango absoluto es O(rango) y la paginación O(offset). Con 100 000 jugadores el p95 está por debajo de 50 ms (<a href="performance.html">performance.md</a>); por encima de ~1 M, la alternativa documentada es Redis Sorted Sets (<a href="adr/0004-future-improvements.html">ADR-004</a>).</p>
 </blockquote>
 <hr />
 <h2 id="4-diseno-de-endpoints-restful">4. Diseño de Endpoints RESTful<a class="headerlink" href="#4-diseno-de-endpoints-restful" title="Enlace a esta sección">#</a></h2>
@@ -608,12 +633,12 @@ WHERE game_id = @gameId
 </tr>
 <tr>
 <td>10</td>
-<td><code>PATCH</code></td>
+<td><code>PUT</code></td>
 <td><code>/api/v1/games/{gameId}</code></td>
-<td>JWT · Owner</td>
-<td>Actualizar metadatos</td>
-<td><code>200</code></td>
-<td><code>400</code>, <code>401</code>, <code>404</code>, <code>409</code>, <code>412</code></td>
+<td>JWT · Owner · <code>If-Match</code> opcional</td>
+<td>Reemplazar metadatos editables (<code>scoreOrder</code> es inmutable)</td>
+<td><code>200</code> + <code>ETag</code></td>
+<td><code>400</code>, <code>401</code>, <code>404</code>, <code>412</code></td>
 </tr>
 <tr>
 <td>11</td>
@@ -723,6 +748,15 @@ WHERE game_id = @gameId
 <td><code>200</code></td>
 <td><code>503</code></td>
 </tr>
+<tr>
+<td>23</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/players/{playerId}</code></td>
+<td>Anónimo · RL <code>public-read</code></td>
+<td>Perfil público (sin email)</td>
+<td><code>200</code></td>
+<td><code>404</code></td>
+</tr>
 </tbody>
 </table></div>
 <p>¹ <code>200 OK</code> cuando la petición es un reintento idempotente (mismo <code>nonce</code>) y se devuelve el resultado original.</p>
@@ -765,7 +799,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 
 { &quot;playerId&quot;: &quot;0192f0c1-…&quot;, &quot;value&quot;: 7200, &quot;metadata&quot;: { &quot;level&quot;: 12, &quot;durationMs&quot;: 184000 } }
 </code></pre>
-<pre><code class="language-json">// 201 Created · Location: /api/v1/scores/{scoreId}
+<pre><code class="language-json">// 201 Created (200 OK si es un reintento con el mismo nonce: &quot;isReplay&quot;: true)
 { &quot;scoreId&quot;: &quot;…&quot;, &quot;value&quot;: 7200, &quot;isPersonalBest&quot;: true, &quot;bestScore&quot;: 7200,
   &quot;rank&quot;: 42, &quot;totalPlayers&quot;: 1000, &quot;status&quot;: &quot;Accepted&quot; }
 </code></pre>
@@ -790,7 +824,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <h3 id="43-errores-estandarizados-rfc-9457-problemdetails">4.3 Errores estandarizados (RFC 9457 ProblemDetails)<a class="headerlink" href="#43-errores-estandarizados-rfc-9457-problemdetails" title="Enlace a esta sección">#</a></h3>
 <p>Todas las respuestas de error usan <code>Content-Type: application/problem+json</code>:</p>
 <pre><code class="language-json">{
-  &quot;type&quot;: &quot;https://httpstatuses.io/422&quot;,
+  &quot;type&quot;: &quot;https://tools.ietf.org/html/rfc4918#section-11.2&quot;,
   &quot;title&quot;: &quot;Score out of range&quot;,
   &quot;status&quot;: 422,
   &quot;detail&quot;: &quot;Score 2000000 exceeds the maximum of 1000000 configured for game 'space-blaster'.&quot;,
@@ -800,7 +834,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 }
 </code></pre>
 <p>Validación (<code>400</code>) añade <code>errors</code>:</p>
-<pre><code class="language-json">{ &quot;type&quot;: &quot;https://httpstatuses.io/400&quot;, &quot;title&quot;: &quot;One or more validation errors occurred.&quot;, &quot;status&quot;: 400,
+<pre><code class="language-json">{ &quot;type&quot;: &quot;https://tools.ietf.org/html/rfc9110#section-15.5.1&quot;, &quot;title&quot;: &quot;One or more validation errors occurred.&quot;, &quot;status&quot;: 400,
   &quot;code&quot;: &quot;validation.failed&quot;, &quot;traceId&quot;: &quot;…&quot;,
   &quot;errors&quot;: { &quot;password&quot;: [&quot;Password must be at least 10 characters long.&quot;] } }
 </code></pre>
@@ -817,7 +851,17 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <tr>
 <td>400</td>
 <td><code>validation.failed</code></td>
-<td>FluentValidation</td>
+<td>FluentValidation (errores por campo en <code>errors</code>)</td>
+</tr>
+<tr>
+<td>400</td>
+<td><code>http.bad_request</code></td>
+<td>JSON mal formado / binding</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>auth.unauthorized</code></td>
+<td>JWT ausente, caducado o manipulado</td>
 </tr>
 <tr>
 <td>401</td>
@@ -831,7 +875,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </tr>
 <tr>
 <td>401</td>
-<td><code>apikey.missing</code> · <code>apikey.invalid</code> · <code>apikey.revoked</code></td>
+<td><code>apikey.missing</code> · <code>apikey.invalid</code> (inexistente o revocada)</td>
 <td>Handler ApiKey</td>
 </tr>
 <tr>
@@ -851,8 +895,13 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </tr>
 <tr>
 <td>404</td>
-<td><code>game.not_found</code> · <code>player.not_found</code> · <code>leaderboard.entry_not_found</code> · <code>apikey.not_found</code></td>
+<td><code>game.not_found</code> · <code>player.not_found</code> · <code>leaderboard.entry_not_found</code> · <code>apikey.not_found</code> · <code>score.not_found</code></td>
 <td>Handlers (también para recursos ajenos)</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>resource.not_found</code></td>
+<td>Ruta inexistente</td>
 </tr>
 <tr>
 <td>409</td>
@@ -862,7 +911,12 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <tr>
 <td>409</td>
 <td><code>game.archived</code></td>
-<td>Envío a juego archivado</td>
+<td>Envío a juego archivado (o emisión de clave)</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>score.nonce_reused</code></td>
+<td>Mismo nonce con un cuerpo distinto</td>
 </tr>
 <tr>
 <td>412</td>
@@ -878,6 +932,11 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <td>429</td>
 <td><code>rate_limit.exceeded</code></td>
 <td>RateLimiter (+ <code>Retry-After</code>)</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>rate_limit.player_exceeded</code></td>
+<td>Más de 10 envíos/min del mismo jugador en un juego</td>
 </tr>
 <tr>
 <td>500</td>
@@ -941,7 +1000,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </tr>
 <tr>
 <td>Autorización</td>
-<td>Políticas: <code>Authenticated</code>, <code>GameOwner</code> (por recurso), <code>Admin</code></td>
+<td>Usuario autenticado + propiedad del recurso comprobada en el caso de uso (<code>404</code> si no es suyo); política <code>Admin</code></td>
 <td>Política <code>GameServer</code> + comprobación <code>game_id</code> claim == ruta</td>
 </tr>
 </tbody>
@@ -995,7 +1054,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </pre>
 <p><strong>Por qué HMAC y no solo una API Key en cabecera:</strong> una clave en claro interceptada (logs de proxy, herramientas de depuración) permite enviar scores arbitrarios indefinidamente. Con HMAC, capturar una petición solo permite <strong>reenviarla</strong> dentro de la ventana, y el nonce lo neutraliza. Además se garantiza <strong>integridad del cuerpo</strong> (no se puede cambiar <code>value</code>). Evaluado en <strong>ADR-003</strong>.</p>
 <blockquote>
-<p><strong>Fase de noviembre:</strong> la API Key se envía como <code>X-Api-Key: {keyId}.{secret}</code> y se compara en tiempo constante (mismo almacenamiento cifrado). En enero se activa HMAC; el modo simple queda deshabilitado por configuración (<code>ApiKeys:AllowPlainSecret=false</code>).</p>
+<p><strong>Swagger UI:</strong> en Development la página inyecta <code>wwwroot/swagger-hmac.js</code>, que firma las peticiones en el navegador con WebCrypto. En <em>Authorize → ApiKeyHmac</em> se introduce <code>keyId:secret</code>; al servidor solo llegan <code>X-Api-Key</code> (id), <code>X-Timestamp</code>, <code>X-Nonce</code> y <code>X-Signature</code>.</p>
 </blockquote>
 <h3 id="54-defensa-en-profundidad-contra-puntuaciones-tramposas">5.4 Defensa en profundidad contra puntuaciones tramposas<a class="headerlink" href="#54-defensa-en-profundidad-contra-puntuaciones-tramposas" title="Enlace a esta sección">#</a></h3>
 <div class="table-wrap"><table>
@@ -1050,7 +1109,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <tbody>
 <tr>
 <td>API1 BOLA</td>
-<td>Autorización por recurso (<code>GameOwner</code>), <code>404</code> para recursos ajenos, UUIDv7 no secuenciales.</td>
+<td>Propiedad comprobada en cada caso de uso (<code>GetOwnedAsync</code>), <code>404</code> para recursos ajenos, UUIDv7 no secuenciales.</td>
 </tr>
 <tr>
 <td>API2 Broken Authentication</td>
@@ -1125,7 +1184,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </tr>
 <tr>
 <td><strong>Health checks</strong></td>
-<td><code>/health/live</code> (proceso vivo, sin dependencias) · <code>/health/ready</code> (<code>AddDbContextCheck</code> / <code>AddNpgSql</code>). Respuesta JSON con estado por componente.</td>
+<td><code>/health/live</code> (proceso vivo, sin dependencias) · <code>/health/ready</code> (<code>AddDbContextCheck&lt;AppDbContext&gt;</code>). Respuesta JSON con estado por componente.</td>
 </tr>
 <tr>
 <td><strong>Rate limiting</strong></td>
@@ -1177,27 +1236,27 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </thead>
 <tbody>
 <tr>
-<td>ADR-001</td>
+<td><a href="adr/0001-postgresql.html">ADR-001</a></td>
 <td>PostgreSQL como almacén principal</td>
-<td>Propuesto (decisión tomada en este diseño)</td>
+<td>Aceptado</td>
 <td>Ene</td>
 </tr>
 <tr>
-<td>ADR-002</td>
+<td><a href="adr/0002-clean-architecture.html">ADR-002</a></td>
 <td>Adopción de Clean Architecture</td>
-<td>Propuesto</td>
+<td>Aceptado</td>
 <td>Ene</td>
 </tr>
 <tr>
-<td>ADR-003</td>
+<td><a href="adr/0003-anti-cheat.html">ADR-003</a></td>
 <td>Estrategia anti-cheat: HMAC + nonce + rate limiting + plausibilidad</td>
-<td>Propuesto</td>
+<td>Aceptado</td>
 <td>Ene</td>
 </tr>
 <tr>
-<td>ADR-004</td>
+<td><a href="adr/0004-future-improvements.html">ADR-004</a></td>
 <td>Mejoras futuras: Redis, tiempo real, microservicios, frontend</td>
-<td>Propuesto</td>
+<td>Aceptado</td>
 <td>Mar</td>
 </tr>
 </tbody>

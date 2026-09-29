@@ -106,6 +106,24 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "leaderboard_stats",
+                columns: table => new
+                {
+                    game_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    player_count = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_leaderboard_stats", x => x.game_id);
+                    table.ForeignKey(
+                        name: "fk_leaderboard_stats_games_game_id",
+                        column: x => x.game_id,
+                        principalTable: "games",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "scores",
                 columns: table => new
                 {
@@ -149,7 +167,7 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
                     game_id = table.Column<Guid>(type: "uuid", nullable: false),
                     player_id = table.Column<Guid>(type: "uuid", nullable: false),
                     best_score = table.Column<long>(type: "bigint", nullable: false),
-                    sort_key = table.Column<long>(type: "bigint", nullable: false),
+                    rank_key = table.Column<long>(type: "bigint", nullable: false),
                     score_id = table.Column<Guid>(type: "uuid", nullable: false),
                     achieved_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     submissions_count = table.Column<int>(type: "integer", nullable: false)
@@ -207,8 +225,8 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
             migrationBuilder.CreateIndex(
                 name: "ix_leaderboard_entries_rank",
                 table: "leaderboard_entries",
-                columns: new[] { "game_id", "sort_key", "achieved_at", "player_id" },
-                descending: new[] { false, true, false, false });
+                columns: new[] { "game_id", "rank_key", "achieved_at", "player_id" })
+                .Annotation("Npgsql:IndexInclude", new[] { "best_score", "score_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_leaderboard_entries_score_id",
@@ -266,6 +284,9 @@ namespace Leaderboard.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropTable(
                 name: "leaderboard_entries");
+
+            migrationBuilder.DropTable(
+                name: "leaderboard_stats");
 
             migrationBuilder.DropTable(
                 name: "refresh_tokens");

@@ -27,6 +27,17 @@ internal sealed class ScoreConfiguration : IEntityTypeConfiguration<Score>
     }
 }
 
+/// <summary>Exact player count per game, maintained in the same statement as the leaderboard upsert.</summary>
+internal sealed class LeaderboardStatsConfiguration : IEntityTypeConfiguration<ReadModels.LeaderboardStats>
+{
+    public void Configure(EntityTypeBuilder<ReadModels.LeaderboardStats> builder)
+    {
+        builder.ToTable("leaderboard_stats");
+        builder.HasKey(s => s.GameId);
+        builder.HasOne<Game>().WithMany().HasForeignKey(s => s.GameId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 internal sealed class LeaderboardEntryConfiguration : IEntityTypeConfiguration<LeaderboardEntry>
 {
     public const string RankIndex = "ix_leaderboard_entries_rank";
@@ -35,9 +46,11 @@ internal sealed class LeaderboardEntryConfiguration : IEntityTypeConfiguration<L
     {
         builder.HasKey(e => new { e.GameId, e.PlayerId });
 
-        // Serves Top N, pages, rank counting and the relative window: ORDER BY sort_key DESC, achieved_at, player_id.
-        builder.HasIndex(e => new { e.GameId, e.SortKey, e.AchievedAt, e.PlayerId })
-            .IsDescending(false, true, false, false)
+        // Ranking order is (rank_key, achieved_at, player_id) ascending. All columns ascend so row-value comparisons
+        // "(rank_key, achieved_at, player_id) < (...)" become index range scans (rank count, relative window).
+        // INCLUDE makes Top N and pages index-only scans.
+        builder.HasIndex(e => new { e.GameId, e.RankKey, e.AchievedAt, e.PlayerId })
+            .IncludeProperties(e => new { e.BestScore, e.ScoreId })
             .HasDatabaseName(RankIndex);
         builder.HasIndex(e => e.PlayerId);
         builder.HasIndex(e => e.ScoreId);

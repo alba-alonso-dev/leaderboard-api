@@ -5,93 +5,88 @@ using Microsoft.EntityFrameworkCore;
 namespace Leaderboard.Infrastructure.ReadModels;
 
 /// <summary>
-/// Ranking queries over <c>leaderboard_entries</c>, all served by the index
-/// <c>(game_id, sort_key DESC, achieved_at, player_id)</c>. Ranks are unique: ties are broken by who achieved the score first.
+/// Ranking queries over <c>leaderboard_entries</c>. Ranking order is <c>(rank_key, achieved_at, player_id)</c> ascending
+/// (lower rank key is better; earlier achievement wins ties), served by the all-ascending covering index
+/// <c>ix_leaderboard_entries_rank</c>. Every query seeks the index and touches only the rows it returns (or counts),
+/// then joins usernames for that small set.
 /// </summary>
 internal sealed class LeaderboardReadService(Persistence.AppDbContext context) : ILeaderboardReadService
 {
-    public async Task<IReadOnlyList<LeaderboardRow>> GetRangeAsync(Guid gameId, int offset, int limit, CancellationToken cancellationToken) =>
-        await ToRows(Best(WithUsername(context.LeaderboardEntries.Where(e => e.GameId == gameId))).Skip(offset).Take(limit))
-            .ToListAsync(cancellationToken);
+    public async Task<IReadOnlyList<LeaderboardRow>> GetRangeAsync(Guid gameId, int offset, int limit, CancellationToken cancellationToken)
+    {
+        // Page the index first, then join: the join only sees `limit` rows.
+        var page = context.LeaderboardEntries
+            .Where(e => e.GameId == gameId)
+            .OrderBy(e => e.RankKey).ThenBy(e => e.AchievedAt).ThenBy(e => e.PlayerId)
+            .Skip(offset).Take(limit);
 
-    public Task<long> CountPlayersAsync(Guid gameId, CancellationToken cancellationToken) =>
-        context.LeaderboardEntries.LongCountAsync(e => e.GameId == gameId, cancellationToken);
+        return await ToRows(page).ToListAsync(cancellationToken);
+    }
+
+    public async Task<long> CountPlayersAsync(Guid gameId, CancellationToken cancellationToken) =>
+        await context.LeaderboardStats.Where(s => s.GameId == gameId).Select(s => (long?)s.PlayerCount).FirstOrDefaultAsync(cancellationToken)
+        ?? 0;
 
     public async Task<RankedRow?> GetPlayerRankAsync(Guid gameId, Guid playerId, CancellationToken cancellationToken)
     {
-        var row = await ToRows(WithUsername(context.LeaderboardEntries.Where(e => e.GameId == gameId && e.PlayerId == playerId)))
+        var row = await ToRows(context.LeaderboardEntries.Where(e => e.GameId == gameId && e.PlayerId == playerId))
             .FirstOrDefaultAsync(cancellationToken);
         if (row is null)
         {
             return null;
         }
 
-        var better = await context.LeaderboardEntries
+        // Rank = 1 + entries strictly ahead: an index range scan thanks to the row-value comparison.
+        var ahead = await context.LeaderboardEntries
             .FromSql(
                 $"""
                 SELECT * FROM leaderboard_entries
                 WHERE game_id = {gameId}
-                  AND (sort_key > {row.SortKey}
-                       OR (sort_key = {row.SortKey} AND achieved_at < {row.AchievedAt})
-                       OR (sort_key = {row.SortKey} AND achieved_at = {row.AchievedAt} AND player_id < {row.PlayerId}))
+                  AND (rank_key, achieved_at, player_id) < ({row.RankKey}, {row.AchievedAt}, {row.PlayerId})
                 """)
             .LongCountAsync(cancellationToken);
 
-        return new RankedRow(row, better + 1);
+        return new RankedRow(row, ahead + 1);
     }
 
     public async Task<IReadOnlyList<LeaderboardRow>> GetAboveAsync(
         Guid gameId, LeaderboardRow target, int count, CancellationToken cancellationToken)
     {
-        var better = context.LeaderboardEntries.FromSql(
+        // Walk the index backwards from the target (closest first), then restore ranking order.
+        var closestFirst = context.LeaderboardEntries.FromSql(
             $"""
             SELECT * FROM leaderboard_entries
             WHERE game_id = {gameId}
-              AND (sort_key > {target.SortKey}
-                   OR (sort_key = {target.SortKey} AND achieved_at < {target.AchievedAt})
-                   OR (sort_key = {target.SortKey} AND achieved_at = {target.AchievedAt} AND player_id < {target.PlayerId}))
+              AND (rank_key, achieved_at, player_id) < ({target.RankKey}, {target.AchievedAt}, {target.PlayerId})
+            ORDER BY rank_key DESC, achieved_at DESC, player_id DESC
+            LIMIT {count}
             """);
 
-        // Walk the index backwards from the target (closest first), then restore ranking order.
-        var closestFirst = await ToRows(
-                WithUsername(better)
-                    .OrderBy(x => x.Entry.SortKey).ThenByDescending(x => x.Entry.AchievedAt).ThenByDescending(x => x.Entry.PlayerId)
-                    .Take(count))
+        return await ToRows(closestFirst.OrderBy(e => e.RankKey).ThenBy(e => e.AchievedAt).ThenBy(e => e.PlayerId))
             .ToListAsync(cancellationToken);
-        closestFirst.Reverse();
-        return closestFirst;
     }
 
     public async Task<IReadOnlyList<LeaderboardRow>> GetBelowAsync(
         Guid gameId, LeaderboardRow target, int count, CancellationToken cancellationToken)
     {
-        var worse = context.LeaderboardEntries.FromSql(
+        var next = context.LeaderboardEntries.FromSql(
             $"""
             SELECT * FROM leaderboard_entries
             WHERE game_id = {gameId}
-              AND (sort_key < {target.SortKey}
-                   OR (sort_key = {target.SortKey} AND achieved_at > {target.AchievedAt})
-                   OR (sort_key = {target.SortKey} AND achieved_at = {target.AchievedAt} AND player_id > {target.PlayerId}))
+              AND (rank_key, achieved_at, player_id) > ({target.RankKey}, {target.AchievedAt}, {target.PlayerId})
+            ORDER BY rank_key, achieved_at, player_id
+            LIMIT {count}
             """);
 
-        return await ToRows(Best(WithUsername(worse)).Take(count)).ToListAsync(cancellationToken);
+        return await ToRows(next.OrderBy(e => e.RankKey).ThenBy(e => e.AchievedAt).ThenBy(e => e.PlayerId))
+            .ToListAsync(cancellationToken);
     }
 
-    /// <summary>Ranking order. Applied after the join so the final SQL keeps it.</summary>
-    private static IQueryable<EntryWithUsername> Best(IQueryable<EntryWithUsername> rows) =>
-        rows.OrderByDescending(x => x.Entry.SortKey).ThenBy(x => x.Entry.AchievedAt).ThenBy(x => x.Entry.PlayerId);
-
-    private IQueryable<EntryWithUsername> WithUsername(IQueryable<LeaderboardEntry> entries) =>
-        entries.Join(context.Players, e => e.PlayerId, p => p.Id, (e, p) => new EntryWithUsername { Entry = e, Username = p.Username });
-
-    private static IQueryable<LeaderboardRow> ToRows(IQueryable<EntryWithUsername> rows) =>
-        rows.Select(x => new LeaderboardRow(
-            x.Entry.PlayerId, x.Username, x.Entry.BestScore, x.Entry.SortKey, x.Entry.AchievedAt, x.Entry.ScoreId));
-
-    private sealed class EntryWithUsername
-    {
-        public required LeaderboardEntry Entry { get; init; }
-
-        public required string Username { get; init; }
-    }
+    /// <summary>Joins usernames and keeps the ranking order in the outer query.</summary>
+    private IQueryable<LeaderboardRow> ToRows(IQueryable<LeaderboardEntry> entries) =>
+        entries
+            .Join(context.Players, e => e.PlayerId, p => p.Id, (e, p) => new { Entry = e, p.Username })
+            .OrderBy(x => x.Entry.RankKey).ThenBy(x => x.Entry.AchievedAt).ThenBy(x => x.Entry.PlayerId)
+            .Select(x => new LeaderboardRow(
+                x.Entry.PlayerId, x.Username, x.Entry.BestScore, x.Entry.RankKey, x.Entry.AchievedAt, x.Entry.ScoreId));
 }

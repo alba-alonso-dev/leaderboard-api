@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Convenciones, patrones y testing">
+<title>Estándares de Código, Patrones y Testing · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <ul>
+        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="coding-standards.html" aria-current="page">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#1-configuracion-base-del-repositorio">1. Configuración base del repositorio</a></li>
+<li><a href="#2-estilo-c">2. Estilo C</a><ul>
+<li><a href="#21-nomenclatura">2.1 Nomenclatura</a></li>
+<li><a href="#22-reglas-de-lenguaje">2.2 Reglas de lenguaje</a></li>
+<li><a href="#23-asincronia">2.3 Asincronía</a></li>
+</ul>
+</li>
+<li><a href="#3-patrones-aplicados">3. Patrones aplicados</a><ul>
+<li><a href="#31-cqrs-liviano-sin-bus-ni-mediatr">3.1 CQRS liviano (sin bus ni MediatR)</a></li>
+<li><a href="#32-repository-specification-solo-donde-aporta">3.2 Repository (+ Specification solo donde aporta)</a></li>
+<li><a href="#33-result-pattern-y-errores-de-dominio">3.3 Result pattern y errores de dominio</a></li>
+<li><a href="#34-gestion-de-excepciones">3.4 Gestión de excepciones</a></li>
+<li><a href="#35-problemdetails-rfc-9457">3.5 ProblemDetails (RFC 9457)</a></li>
+<li><a href="#36-validacion-fluentvalidation">3.6 Validación (FluentValidation)</a></li>
+<li><a href="#37-endpoints-minimal-apis">3.7 Endpoints (Minimal APIs)</a></li>
+<li><a href="#38-ef-core">3.8 EF Core</a></li>
+<li><a href="#39-logging-serilog">3.9 Logging (Serilog)</a></li>
+</ul>
+</li>
+<li><a href="#4-estrategia-de-testing">4. Estrategia de testing</a><ul>
+<li><a href="#41-piramide">4.1 Pirámide</a></li>
+<li><a href="#42-reglas-de-tests">4.2 Reglas de tests</a></li>
+<li><a href="#43-tests-de-arquitectura-ejemplo">4.3 Tests de arquitectura (ejemplo)</a></li>
+</ul>
+</li>
+<li><a href="#5-seguridad-en-el-codigo">5. Seguridad en el código</a></li>
+<li><a href="#6-git-revisiones-y-calidad">6. Git, revisiones y calidad</a></li>
+<li><a href="#7-dependencias-aprobadas">7. Dependencias aprobadas</a></li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="estandares-de-codigo-patrones-y-testing">Estándares de Código, Patrones y Testing<a class="headerlink" href="#estandares-de-codigo-patrones-y-testing" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Documento:</strong> <code>docs/coding-standards.md</code> · <strong>Estado:</strong> Vigente desde la Fase 1 · <strong>Versión:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="architecture.html">Arquitectura</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a></p>
+</blockquote>
+<p>Estas normas existen para que el código sea <strong>predecible</strong>: cualquier revisor (o entrevistador) debe poder abrir un archivo y saber dónde está cada cosa y por qué. Lo que puede comprobar una herramienta, lo comprueba una herramienta (<code>.editorconfig</code>, analizadores, <code>dotnet format</code>, tests de arquitectura); este documento cubre el resto.</p>
+<h2 id="1-configuracion-base-del-repositorio">1. Configuración base del repositorio<a class="headerlink" href="#1-configuracion-base-del-repositorio" title="Enlace a esta sección">#</a></h2>
+<pre><code class="language-xml">&lt;!-- Directory.Build.props --&gt;
+&lt;Project&gt;
+  &lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net10.0&lt;/TargetFramework&gt;
+    &lt;LangVersion&gt;latest&lt;/LangVersion&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;TreatWarningsAsErrors&gt;true&lt;/TreatWarningsAsErrors&gt;
+    &lt;AnalysisLevel&gt;latest-recommended&lt;/AnalysisLevel&gt;
+    &lt;EnforceCodeStyleInBuild&gt;true&lt;/EnforceCodeStyleInBuild&gt;
+    &lt;GenerateDocumentationFile&gt;true&lt;/GenerateDocumentationFile&gt;
+    &lt;NoWarn&gt;$(NoWarn);CS1591&lt;/NoWarn&gt; &lt;!-- XML docs solo donde aportan (API pública/OpenAPI) --&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;
+</code></pre>
+<ul>
+<li><strong>Versiones centralizadas</strong> en <code>Directory.Packages.props</code> (<code>ManagePackageVersionsCentrally=true</code>).</li>
+<li><strong>SDK fijado</strong> en <code>global.json</code> (<code>rollForward: latestFeature</code>).</li>
+<li><strong><code>.editorconfig</code></strong> es la fuente de verdad de estilo; <code>dotnet format --verify-no-changes</code> corre en CI.</li>
+</ul>
+<h2 id="2-estilo-c">2. Estilo C<a class="headerlink" href="#2-estilo-c" title="Enlace a esta sección">#</a></h2>
+<h3 id="21-nomenclatura">2.1 Nomenclatura<a class="headerlink" href="#21-nomenclatura" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Convención</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Namespaces</td>
+<td>File-scoped, reflejan carpeta</td>
+<td><code>namespace Leaderboard.Application.Scores.SubmitScore;</code></td>
+</tr>
+<tr>
+<td>Clases, records, enums, métodos, propiedades</td>
+<td><code>PascalCase</code></td>
+<td><code>LeaderboardEntry</code>, <code>GetTopAsync</code></td>
+</tr>
+<tr>
+<td>Interfaces</td>
+<td>Prefijo <code>I</code></td>
+<td><code>IGameRepository</code></td>
+</tr>
+<tr>
+<td>Parámetros y locales</td>
+<td><code>camelCase</code></td>
+<td><code>gameId</code>, <code>pageSize</code></td>
+</tr>
+<tr>
+<td>Campos privados</td>
+<td><code>_camelCase</code></td>
+<td><code>_timeProvider</code></td>
+</tr>
+<tr>
+<td>Constantes</td>
+<td><code>PascalCase</code></td>
+<td><code>MaxPageSize</code></td>
+</tr>
+<tr>
+<td>Métodos asíncronos</td>
+<td>Sufijo <code>Async</code></td>
+<td><code>SubmitAsync</code></td>
+</tr>
+<tr>
+<td>Casos de uso</td>
+<td><code>Verbo + Sustantivo</code> + <code>Command</code>/<code>Query</code> + <code>Handler</code></td>
+<td><code>SubmitScoreCommand</code>, <code>SubmitScoreCommandHandler</code></td>
+</tr>
+<tr>
+<td>DTOs HTTP</td>
+<td><code>…Request</code> / <code>…Response</code></td>
+<td><code>RegisterPlayerRequest</code>, <code>PlayerRankResponse</code></td>
+</tr>
+<tr>
+<td>Errores de dominio</td>
+<td>Clase estática <code>…Errors</code></td>
+<td><code>ScoreErrors.OutOfRange</code></td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><code>Metodo_Escenario_ResultadoEsperado</code></td>
+<td><code>Submit_WhenScoreExceedsMax_ReturnsOutOfRange</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="22-reglas-de-lenguaje">2.2 Reglas de lenguaje<a class="headerlink" href="#22-reglas-de-lenguaje" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><strong><code>sealed</code> por defecto</strong> para clases que no están diseñadas para herencia (handlers, servicios, endpoints, entidades concretas).</li>
+<li><strong><code>record</code>/<code>record struct</code></strong> para DTOs, comandos, consultas y Value Objects; <strong>inmutables</strong> (<code>init</code>).</li>
+<li><strong>Constructores primarios</strong> para inyección de dependencias en servicios; no para entidades (necesitan validación).</li>
+<li><strong>Nullable reference types</strong> activo: prohibido <code>!</code> (null-forgiving) salvo en tests o con comentario que justifique.</li>
+<li><strong><code>var</code></strong> cuando el tipo es evidente en la parte derecha; tipo explícito en caso contrario.</li>
+<li><strong>Colecciones:</strong> exponer <code>IReadOnlyList&lt;T&gt;</code>/<code>IReadOnlyCollection&lt;T&gt;</code>; usar <em>collection expressions</em> (<code>[]</code>).</li>
+<li><strong>Sin «magic numbers»:</strong> límites como <code>MaxPageSize = 100</code>, <code>SignatureWindow = TimeSpan.FromSeconds(300)</code> en constantes u <code>Options</code>.</li>
+<li><strong>Tiempo:</strong> nunca <code>DateTime.Now</code>/<code>UtcNow</code>; siempre <code>TimeProvider</code> inyectado. Tipos <code>DateTimeOffset</code> en UTC.</li>
+<li><strong>Identificadores:</strong> <code>Guid.CreateVersion7()</code> generado en el dominio (no en la BD) para conocer el ID antes de persistir.</li>
+<li><strong>Tamaño:</strong> métodos ≤ ~30 líneas; clases con una responsabilidad. Un tipo público por archivo.</li>
+<li><strong>Comentarios:</strong> explican el <em>por qué</em>, no el <em>qué</em>. XML docs en endpoints/DTOs (alimentan OpenAPI).</li>
+</ul>
+<h3 id="23-asincronia">2.3 Asincronía<a class="headerlink" href="#23-asincronia" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><code>async</code> de extremo a extremo; prohibido <code>.Result</code>, <code>.Wait()</code> y <code>async void</code>.</li>
+<li><strong><code>CancellationToken</code> obligatorio</strong> como último parámetro en todo método asíncrono de Application e Infrastructure, propagado hasta EF Core.</li>
+<li>Sin <code>ConfigureAwait(false)</code> en código de aplicación ASP.NET Core (no hay <code>SynchronizationContext</code>).</li>
+</ul>
+<h2 id="3-patrones-aplicados">3. Patrones aplicados<a class="headerlink" href="#3-patrones-aplicados" title="Enlace a esta sección">#</a></h2>
+<h3 id="31-cqrs-liviano-sin-bus-ni-mediatr">3.1 CQRS liviano (sin bus ni MediatR)<a class="headerlink" href="#31-cqrs-liviano-sin-bus-ni-mediatr" title="Enlace a esta sección">#</a></h3>
+<p>Comandos y consultas son tipos distintos con handlers distintos. <strong>No</strong> hay mediador: el endpoint recibe el handler por DI. Los aspectos transversales (validación, logging) se añaden con <strong>decoradores</strong> (Scrutor).</p>
+<pre><code class="language-csharp">public interface ICommandHandler&lt;in TCommand, TResponse&gt; where TCommand : ICommand&lt;TResponse&gt;
+{
+    Task&lt;Result&lt;TResponse&gt;&gt; HandleAsync(TCommand command, CancellationToken ct);
+}
+
+public sealed record SubmitScoreCommand(Guid GameId, Guid ApiKeyId, Guid PlayerId, long Value, string Nonce)
+    : ICommand&lt;SubmitScoreResponse&gt;;
+</code></pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Lado</th>
+<th>Pasa por</th>
+<th>Acceso a datos</th>
+<th>Tracking</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Command</strong></td>
+<td>Validador → Handler → Agregado de dominio → Repositorio → <code>IUnitOfWork.SaveChangesAsync</code></td>
+<td>Repositorios</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Query</strong></td>
+<td>Validador → Handler → Read service</td>
+<td>Proyección LINQ (<code>Select</code> a DTO) o SQL</td>
+<td><code>AsNoTracking</code></td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>Por qué no MediatR:</strong> licencia comercial desde v13 y la indirección (<code>ISender.Send</code>) oculta qué se ejecuta. Inyectar el handler es igual de desacoplado y se navega con <em>Go to definition</em>.</p>
+</blockquote>
+<h3 id="32-repository-specification-solo-donde-aporta">3.2 Repository (+ Specification solo donde aporta)<a class="headerlink" href="#32-repository-specification-solo-donde-aporta" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><strong>Un repositorio por agregado raíz</strong> (<code>IPlayerRepository</code>, <code>IGameRepository</code>, <code>IScoreRepository</code>), interfaz en Application, implementación en Infrastructure.</li>
+<li>Métodos con <strong>intención de negocio</strong>, no CRUD genérico: <code>GetOwnedByAsync(gameId, ownerId, ct)</code>, <code>ExistsWithSlugAsync(slug, ct)</code>, <code>CountActiveKeysAsync(gameId, ct)</code>.</li>
+<li><strong>No</strong> hay <code>IRepository&lt;T&gt;</code> genérico que exponga <code>IQueryable</code> (filtraría EF a Application).</li>
+<li><strong>Specification</strong>: se usa solo para filtros combinables reutilizados (p. ej. <code>ActiveGamesSpec</code> + <code>SearchByNameSpec</code> en el listado de juegos). Implementación mínima propia (<code>Expression&lt;Func&lt;T,bool&gt;&gt;</code> + <code>ApplySpecification</code>), sin librería.</li>
+<li><strong>Lecturas de ranking</strong> fuera del patrón repositorio: <code>ILeaderboardReadService</code> con consultas específicas y optimizadas (ver arquitectura §3.4).</li>
+</ul>
+<h3 id="33-result-pattern-y-errores-de-dominio">3.3 Result pattern y errores de dominio<a class="headerlink" href="#33-result-pattern-y-errores-de-dominio" title="Enlace a esta sección">#</a></h3>
+<pre><code class="language-csharp">public enum ErrorType { Validation, NotFound, Conflict, Unauthorized, Forbidden, BusinessRule }
+
+public sealed record Error(string Code, string Description, ErrorType Type);
+
+public static class ScoreErrors
+{
+    public static Error OutOfRange(long value, long max) =&gt;
+        new(&quot;score.out_of_range&quot;, $&quot;Score {value} exceeds the maximum of {max}.&quot;, ErrorType.BusinessRule);
+}
+</code></pre>
+<ul>
+<li><strong>Errores esperados</strong> (reglas de negocio, no encontrado, conflicto) → <code>Result&lt;T&gt;.Failure(error)</code>. Nunca excepciones para control de flujo.</li>
+<li><strong>Mapeo único</strong> <code>ErrorType → HTTP</code> en la capa Api:</li>
+</ul>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th><code>ErrorType</code></th>
+<th>HTTP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Validation</code></td>
+<td>400</td>
+</tr>
+<tr>
+<td><code>Unauthorized</code></td>
+<td>401</td>
+</tr>
+<tr>
+<td><code>Forbidden</code></td>
+<td>403</td>
+</tr>
+<tr>
+<td><code>NotFound</code></td>
+<td>404</td>
+</tr>
+<tr>
+<td><code>Conflict</code></td>
+<td>409</td>
+</tr>
+<tr>
+<td><code>BusinessRule</code></td>
+<td>422</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="34-gestion-de-excepciones">3.4 Gestión de excepciones<a class="headerlink" href="#34-gestion-de-excepciones" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situación</th>
+<th>Tratamiento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Invariante de dominio violada por un bug (p. ej. constructor con estado imposible)</td>
+<td><code>throw</code> de <code>DomainException</code> → llega al handler global → <code>500</code> (es un bug, no un error del usuario)</td>
+</tr>
+<tr>
+<td><code>DbUpdateException</code> por violación <code>UNIQUE</code> en carrera</td>
+<td>Capturada <strong>en el repositorio</strong>, traducida a <code>Result</code> con <code>Conflict</code> (p. ej. <code>game.slug_taken</code>) o a respuesta idempotente (nonce)</td>
+</tr>
+<tr>
+<td><code>DbUpdateConcurrencyException</code> (<code>xmin</code>)</td>
+<td>Traducida a <code>412 concurrency.conflict</code></td>
+</tr>
+<tr>
+<td><code>OperationCanceledException</code> por cancelación del cliente</td>
+<td>No se registra como error; respuesta <code>499</code> (log <code>Information</code>)</td>
+</tr>
+<tr>
+<td>Cualquier otra excepción</td>
+<td><code>GlobalExceptionHandler : IExceptionHandler</code> → log <code>Error</code> con contexto → <code>500 server.unexpected</code> con <code>traceId</code>; detalles solo en Development</td>
+</tr>
+</tbody>
+</table></div>
+<p>Reglas:</p>
+<ul>
+<li><strong>Nunca</strong> <code>catch (Exception)</code> salvo en el handler global y en el <em>bootstrap</em> de <code>Program.cs</code>.</li>
+<li><strong>Nunca</strong> tragarse una excepción: se traduce, se registra o se relanza (<code>throw;</code>, no <code>throw ex;</code>).</li>
+<li><strong>Guard clauses</strong> con <code>ArgumentNullException.ThrowIfNull</code> / <code>ArgumentOutOfRangeException.ThrowIfNegative</code> en constructores de dominio.</li>
+</ul>
+<h3 id="35-problemdetails-rfc-9457">3.5 ProblemDetails (RFC 9457)<a class="headerlink" href="#35-problemdetails-rfc-9457" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><code>builder.Services.AddProblemDetails(o =&gt; o.CustomizeProblemDetails = ctx =&gt; { /* traceId, code, instance */ })</code>.</li>
+<li><code>app.UseExceptionHandler()</code> + <code>app.UseStatusCodePages()</code> para que <strong>incluso</strong> los <code>401/404/405</code> del framework salgan como <code>application/problem+json</code>.</li>
+<li><code>code</code> estable y documentado (catálogo en arquitectura §4.3). Cambiar un <code>code</code> es un <strong>breaking change</strong>.</li>
+<li>Los mensajes (<code>title</code>, <code>detail</code>) están en inglés (convención de API pública); la documentación del proyecto, en español.</li>
+</ul>
+<h3 id="36-validacion-fluentvalidation">3.6 Validación (FluentValidation)<a class="headerlink" href="#36-validacion-fluentvalidation" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li>Un validador por Request/Command, en la misma carpeta del caso de uso: <code>SubmitScoreCommandValidator</code>.</li>
+<li>Validación <strong>sintáctica</strong> (formato, longitudes, rangos genéricos) en validadores; validación <strong>semántica</strong> que requiere estado (slug único, score dentro del rango del juego) en el handler/dominio.</li>
+<li>Ejecutada por un filtro de endpoint (<code>ValidationFilter&lt;TRequest&gt;</code>) en Api y por un decorador en Application (defensa en profundidad); <strong>sin</strong> validación automática por reflexión obsoleta (<code>FluentValidation.AspNetCore</code> está deprecado).</li>
+<li>Mensajes con <code>WithErrorCode</code> cuando el cliente necesita distinguirlos.</li>
+</ul>
+<h3 id="37-endpoints-minimal-apis">3.7 Endpoints (Minimal APIs)<a class="headerlink" href="#37-endpoints-minimal-apis" title="Enlace a esta sección">#</a></h3>
+<pre><code class="language-csharp">public sealed class LeaderboardEndpoints : IEndpointGroup
+{
+    public void Map(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup(&quot;/api/v1/games/{gameId:guid}/leaderboard&quot;)
+                       .WithTags(&quot;Leaderboard&quot;)
+                       .RequireRateLimiting(RateLimitPolicies.PublicRead)
+                       .AllowAnonymous();
+
+        group.MapGet(&quot;/top&quot;, GetTopAsync)
+             .WithName(&quot;GetTopScores&quot;)
+             .WithSummary(&quot;Returns the top N players of a game.&quot;)
+             .Produces&lt;IReadOnlyList&lt;LeaderboardEntryResponse&gt;&gt;()
+             .ProducesValidationProblem()
+             .ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    private static async Task&lt;IResult&gt; GetTopAsync(
+        Guid gameId, [AsParameters] TopQueryParameters query,
+        IQueryHandler&lt;GetTopQuery, IReadOnlyList&lt;LeaderboardEntryResponse&gt;&gt; handler, CancellationToken ct)
+        =&gt; (await handler.HandleAsync(new GetTopQuery(gameId, query.N), ct)).ToHttpResult();
+}
+</code></pre>
+<ul>
+<li>Un archivo <code>…Endpoints</code> por feature; <strong>sin lógica de negocio</strong> (binding → handler → <code>ToHttpResult()</code>).</li>
+<li>Toda ruta declara <code>Produces…</code> para un contrato OpenAPI completo.</li>
+<li>Autorización declarada en el grupo; <code>AllowAnonymous</code> siempre explícito.</li>
+</ul>
+<h3 id="38-ef-core">3.8 EF Core<a class="headerlink" href="#38-ef-core" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li>Configuración con <code>IEntityTypeConfiguration&lt;T&gt;</code> (nada de <em>data annotations</em> en el dominio).</li>
+<li>Nombres <code>snake_case</code> (<code>UseSnakeCaseNamingConvention</code>).</li>
+<li>Consultas de lectura: <code>AsNoTracking()</code> + proyección <code>Select</code> a DTO; nunca devolver entidades por HTTP.</li>
+<li>Prohibido <em>lazy loading</em>; <code>Include</code> solo en comandos que lo necesiten.</li>
+<li>SQL crudo solo en read services / upsert, <strong>siempre parametrizado</strong> (<code>FromSql($"…")</code> interpolado seguro o <code>NpgsqlParameter</code>), nunca concatenado.</li>
+<li>Una migración por cambio de modelo, con nombre descriptivo (<code>AddNonceToScores</code>), revisada en el PR.</li>
+</ul>
+<h3 id="39-logging-serilog">3.9 Logging (Serilog)<a class="headerlink" href="#39-logging-serilog" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><strong>Plantillas de mensaje</strong>, no interpolación: <code>logger.LogInformation("Score {ScoreId} accepted for game {GameId}", …)</code>.</li>
+<li>Preferir <code>LoggerMessage</code> source generators (<code>[LoggerMessage]</code>) en rutas calientes.</li>
+<li><strong>Nunca</strong> registrar: contraseñas, tokens, secretos de API Key, firma HMAC, email. Registrar <code>keyId</code>/<code>playerId</code> es aceptable.</li>
+<li>Niveles: <code>Debug</code> (diagnóstico), <code>Information</code> (eventos de negocio), <code>Warning</code> (rechazos de seguridad, reintentos), <code>Error</code> (excepciones no controladas), <code>Fatal</code> (arranque fallido).</li>
+</ul>
+<h2 id="4-estrategia-de-testing">4. Estrategia de testing<a class="headerlink" href="#4-estrategia-de-testing" title="Enlace a esta sección">#</a></h2>
+<h3 id="41-piramide">4.1 Pirámide<a class="headerlink" href="#41-piramide" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">flowchart TB
+    A[&quot;🔺 Smoke (CI · Docker Compose)&lt;br/&gt;health + swagger · 2-3 checks&quot;]
+    B[&quot;Integración (WebApplicationFactory + Testcontainers PostgreSQL)&lt;br/&gt;contrato HTTP, auth, SQL real, concurrencia · ~60 tests&quot;]
+    C[&quot;Unitarios (Domain + Application)&lt;br/&gt;reglas, validadores, handlers con fakes · ~150 tests&quot;]
+    D[&quot;Arquitectura (NetArchTest)&lt;br/&gt;regla de dependencias, convenciones · ~10 tests&quot;]
+    A --- B --- C
+    C --- D
+</pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Proyecto</th>
+<th>Qué cubre</th>
+<th>Herramientas</th>
+<th>Objetivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unitario</td>
+<td><code>*.Domain.UnitTests</code>, <code>*.Application.UnitTests</code></td>
+<td>Invariantes, <code>IsBetter</code>/<code>SortKey</code>, validadores, handlers</td>
+<td>xUnit v3, Shouldly, NSubstitute, <code>FakeTimeProvider</code></td>
+<td>≥ 80 % líneas en Domain+Application; &lt; 5 s</td>
+</tr>
+<tr>
+<td>Integración</td>
+<td><code>*.Api.IntegrationTests</code></td>
+<td>Endpoints extremo a extremo, códigos HTTP, ProblemDetails, auth JWT y HMAC, SQL de ranking, concurrencia</td>
+<td><code>WebApplicationFactory&lt;Program&gt;</code>, Testcontainers.PostgreSql, Respawn</td>
+<td>Cada endpoint: camino feliz + errores principales</td>
+</tr>
+<tr>
+<td>Arquitectura</td>
+<td><code>*.ArchitectureTests</code></td>
+<td>Regla de dependencias, <code>sealed</code>, sufijos</td>
+<td>NetArchTest.Rules</td>
+<td>100 % verde siempre</td>
+</tr>
+<tr>
+<td>Smoke</td>
+<td>Job CI <code>docker</code></td>
+<td>Imagen arranca, <code>ready</code> + Swagger</td>
+<td><code>docker compose up --wait</code>, <code>curl</code></td>
+<td>Cada PR</td>
+</tr>
+<tr>
+<td>Carga</td>
+<td><code>perf/k6</code></td>
+<td>RNF-01</td>
+<td>k6</td>
+<td>Manual antes de <code>v1.0.0</code></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="42-reglas-de-tests">4.2 Reglas de tests<a class="headerlink" href="#42-reglas-de-tests" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li>Estructura <strong>Arrange / Act / Assert</strong> separada por líneas en blanco; un comportamiento por test.</li>
+<li><strong>Sin InMemory provider ni SQLite</strong>: la integración usa PostgreSQL real (el SQL de ranking es específico de PostgreSQL).</li>
+<li>Tests <strong>independientes y en paralelo</strong> entre colecciones; BD reseteada con Respawn.</li>
+<li>Datos con <strong>builders</strong> y valores explícitos relevantes; nada de datos «mágicos» compartidos.</li>
+<li>Tiempo controlado con <code>FakeTimeProvider</code> (expiración JWT, ventana HMAC, desempates).</li>
+<li><strong>Un bug = un test</strong> que lo reproduce antes del fix.</li>
+<li>Prohibido <code>Thread.Sleep</code>/<code>Task.Delay</code> para sincronizar.</li>
+<li>Los tests nunca se desactivan para «poner CI en verde»; un test inestable se arregla o se abre issue bloqueante.</li>
+</ul>
+<pre><code class="language-csharp">[Fact]
+public async Task SubmitScore_WhenBetterThanPersonalBest_UpdatesRankAndReturnsPersonalBest()
+{
+    // Arrange
+    var game = await _api.CreateGameAsync(scoreOrder: ScoreOrder.HigherIsBetter);
+    var player = await _api.RegisterPlayerAsync();
+    var client = _api.CreateGameServerClient(game.ApiKey);
+    await client.SubmitScoreAsync(game.Id, player.Id, value: 5_000);
+
+    // Act
+    var response = await client.SubmitScoreAsync(game.Id, player.Id, value: 7_200);
+
+    // Assert
+    response.StatusCode.ShouldBe(HttpStatusCode.Created);
+    var body = await response.ReadAsAsync&lt;SubmitScoreResponse&gt;();
+    body.IsPersonalBest.ShouldBeTrue();
+    body.BestScore.ShouldBe(7_200);
+    body.Rank.ShouldBe(1);
+}
+</code></pre>
+<h3 id="43-tests-de-arquitectura-ejemplo">4.3 Tests de arquitectura (ejemplo)<a class="headerlink" href="#43-tests-de-arquitectura-ejemplo" title="Enlace a esta sección">#</a></h3>
+<pre><code class="language-csharp">[Fact]
+public void Domain_ShouldNotDependOnAnyOtherLayer() =&gt;
+    Types.InAssembly(DomainAssembly)
+         .ShouldNot().HaveDependencyOnAny(&quot;Leaderboard.Application&quot;, &quot;Leaderboard.Infrastructure&quot;,
+                                          &quot;Leaderboard.Api&quot;, &quot;Microsoft.EntityFrameworkCore&quot;)
+         .GetResult().IsSuccessful.ShouldBeTrue();
+</code></pre>
+<h2 id="5-seguridad-en-el-codigo">5. Seguridad en el código<a class="headerlink" href="#5-seguridad-en-el-codigo" title="Enlace a esta sección">#</a></h2>
+<ul>
+<li>Comparaciones de secretos con <code>CryptographicOperations.FixedTimeEquals</code>.</li>
+<li>Aleatoriedad criptográfica con <code>RandomNumberGenerator</code> (nunca <code>Random</code>).</li>
+<li>Contraseñas con <code>PasswordHasher&lt;T&gt;</code> (PBKDF2); nunca algoritmos propios.</li>
+<li>Opciones sensibles con <code>IOptions&lt;T&gt;</code> + <code>ValidateDataAnnotations().ValidateOnStart()</code> (la app no arranca con una clave JWT corta).</li>
+<li>DTOs de entrada explícitos (no enlazar entidades) para evitar <em>mass assignment</em>.</li>
+<li>Límites de tamaño en toda entrada variable (strings, <code>metadata</code>, paginación).</li>
+</ul>
+<h2 id="6-git-revisiones-y-calidad">6. Git, revisiones y calidad<a class="headerlink" href="#6-git-revisiones-y-calidad" title="Enlace a esta sección">#</a></h2>
+<ul>
+<li><strong>Conventional Commits</strong> con <em>scope</em> por feature: <code>feat(leaderboard): add around-player endpoint</code>.</li>
+<li>PR pequeño (idealmente &lt; 400 líneas de diff), con descripción <em>qué/por qué/cómo probar</em> y enlace al issue (<code>Closes #…</code>).</li>
+<li><strong>Checklist de PR:</strong></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Tests nuevos/actualizados y en verde</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Sin warnings; <code>dotnet format</code> aplicado</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Contrato OpenAPI revisado (códigos de respuesta, ejemplos)</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Nuevos <code>code</code> de error añadidos al catálogo</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Sin secretos ni datos personales en código/logs</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Migración revisada (si aplica)</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> Documentación / ADR actualizada (si cambia una decisión)</li>
+</ul>
+<h2 id="7-dependencias-aprobadas">7. Dependencias aprobadas<a class="headerlink" href="#7-dependencias-aprobadas" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Propósito</th>
+<th>Paquete</th>
+<th>Licencia</th>
+<th>Capa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ORM / PostgreSQL</td>
+<td><code>Microsoft.EntityFrameworkCore</code>, <code>Npgsql.EntityFrameworkCore.PostgreSQL</code>, <code>EFCore.NamingConventions</code></td>
+<td>MIT / PostgreSQL / Apache-2.0</td>
+<td>Infrastructure</td>
+</tr>
+<tr>
+<td>JWT</td>
+<td><code>Microsoft.AspNetCore.Authentication.JwtBearer</code></td>
+<td>MIT</td>
+<td>Api / Infrastructure</td>
+</tr>
+<tr>
+<td>Hash de contraseñas</td>
+<td><code>Microsoft.Extensions.Identity.Core</code> (<code>PasswordHasher&lt;T&gt;</code>)</td>
+<td>MIT</td>
+<td>Infrastructure</td>
+</tr>
+<tr>
+<td>Validación</td>
+<td><code>FluentValidation</code>, <code>FluentValidation.DependencyInjectionExtensions</code></td>
+<td>Apache-2.0</td>
+<td>Application</td>
+</tr>
+<tr>
+<td>DI scanning / decoradores</td>
+<td><code>Scrutor</code></td>
+<td>MIT</td>
+<td>Application / Api</td>
+</tr>
+<tr>
+<td>OpenAPI</td>
+<td><code>Microsoft.AspNetCore.OpenApi</code>, <code>Swashbuckle.AspNetCore.SwaggerUI</code></td>
+<td>MIT</td>
+<td>Api</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td><code>Serilog.AspNetCore</code>, <code>Serilog.Formatting.Compact</code></td>
+<td>Apache-2.0</td>
+<td>Api</td>
+</tr>
+<tr>
+<td>Health checks</td>
+<td><code>AspNetCore.HealthChecks.NpgSql</code></td>
+<td>Apache-2.0</td>
+<td>Api</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><code>xunit.v3</code>, <code>Shouldly</code>, <code>NSubstitute</code>, <code>Testcontainers.PostgreSql</code>, <code>Respawn</code>, <code>NetArchTest.Rules</code>, <code>Microsoft.AspNetCore.Mvc.Testing</code>, <code>Microsoft.Extensions.TimeProvider.Testing</code>, <code>coverlet.collector</code></td>
+<td>Apache-2.0 / BSD / MIT</td>
+<td>tests</td>
+</tr>
+</tbody>
+</table></div>
+<p>Añadir una dependencia nueva requiere justificarla en el PR (propósito, licencia, mantenimiento activo).</p>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="coding-standards.md"><code>docs/coding-standards.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

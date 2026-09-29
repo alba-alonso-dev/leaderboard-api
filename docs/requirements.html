@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="RF, RNF e historias de usuario">
+<title>Análisis de Requerimientos · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <ul>
+        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="requirements.html" aria-current="page">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#1-contexto-y-objetivo">1. Contexto y objetivo</a><ul>
+<li><a href="#11-actores">1.1 Actores</a></li>
+<li><a href="#12-glosario">1.2 Glosario</a></li>
+</ul>
+</li>
+<li><a href="#2-requerimientos-funcionales">2. Requerimientos Funcionales</a><ul>
+<li><a href="#21-autenticacion-y-cuentas">2.1 Autenticación y cuentas</a></li>
+<li><a href="#22-gestion-de-juegos-y-credenciales">2.2 Gestión de juegos y credenciales</a></li>
+<li><a href="#23-puntuaciones-y-clasificaciones">2.3 Puntuaciones y clasificaciones</a></li>
+<li><a href="#24-anti-cheat-y-moderacion">2.4 Anti-cheat y moderación</a></li>
+<li><a href="#25-calidad-de-api-transversal">2.5 Calidad de API (transversal)</a></li>
+</ul>
+</li>
+<li><a href="#3-requerimientos-no-funcionales">3. Requerimientos No Funcionales</a></li>
+<li><a href="#4-historias-de-usuario">4. Historias de Usuario</a><ul>
+<li><a href="#us-01-registro-de-jugador-rf-01-rf-41-rf-42">US-01 · Registro de jugador (RF-01, RF-41, RF-42)</a></li>
+<li><a href="#us-02-inicio-de-sesion-rf-02-rf-06">US-02 · Inicio de sesión (RF-02, RF-06)</a></li>
+<li><a href="#us-03-registrar-un-juego-y-obtener-api-key-rf-10-rf-13-rf-14">US-03 · Registrar un juego y obtener API Key (RF-10, RF-13, RF-14)</a></li>
+<li><a href="#us-04-enviar-puntuacion-desde-el-servidor-del-juego-rf-20rf-23-rf-29-rf-30">US-04 · Enviar puntuación desde el servidor del juego (RF-20…RF-23, RF-29, RF-30)</a></li>
+<li><a href="#us-05-consultar-el-top-n-rf-24-rf-40">US-05 · Consultar el Top N (RF-24, RF-40)</a></li>
+<li><a href="#us-06-consultar-mi-posicion-absoluta-y-relativa-rf-26-rf-27-rf-28">US-06 · Consultar mi posición absoluta y relativa (RF-26, RF-27, RF-28)</a></li>
+<li><a href="#us-07-revocar-y-rotar-api-keys-rf-15-rf-16">US-07 · Revocar y rotar API Keys (RF-15, RF-16)</a></li>
+<li><a href="#us-08-operar-y-monitorizar-el-servicio-rf-44-rnf-05-rnf-06">US-08 · Operar y monitorizar el servicio (RF-44, RNF-05, RNF-06)</a></li>
+</ul>
+</li>
+<li><a href="#5-supuestos-restricciones-y-fuera-de-alcance">5. Supuestos, restricciones y fuera de alcance</a></li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="analisis-de-requerimientos">Análisis de Requerimientos<a class="headerlink" href="#analisis-de-requerimientos" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Documento:</strong> <code>docs/requirements.md</code> · <strong>Estado:</strong> Aprobado para Fase 1 (Noviembre) · <strong>Versión:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="architecture.html">Arquitectura</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a> · <a href="coding-standards.html">Estándares de código</a></p>
+</blockquote>
+<h2 id="1-contexto-y-objetivo">1. Contexto y objetivo<a class="headerlink" href="#1-contexto-y-objetivo" title="Enlace a esta sección">#</a></h2>
+<p><strong>Leaderboard REST API</strong> es un servicio backend que permite a estudios y desarrolladores de videojuegos:</p>
+<ol>
+<li>Registrar sus juegos y obtener credenciales de servidor (API Keys) para enviar puntuaciones.</li>
+<li>Recibir puntuaciones de forma segura (autenticadas, firmadas y limitadas en frecuencia).</li>
+<li>Exponer clasificaciones (Top N, páginas del ranking, posición absoluta y relativa de un jugador).</li>
+</ol>
+<p>Además de su utilidad funcional, el proyecto es una <strong>pieza de portafolio</strong> para entrevistas técnicas: cada decisión debe ser defendible, estar documentada (ADR) y cubierta por tests.</p>
+<h3 id="11-actores">1.1 Actores<a class="headerlink" href="#11-actores" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Actor</th>
+<th>Descripción</th>
+<th>Mecanismo de autenticación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Jugador</strong> (<code>Player</code>)</td>
+<td>Persona que se registra, inicia sesión y consulta su posición.</td>
+<td>JWT (Bearer)</td>
+</tr>
+<tr>
+<td><strong>Propietario de juego</strong> (<code>GameOwner</code>)</td>
+<td>Un jugador que registra juegos y gestiona sus API Keys. No es un rol distinto: es la relación <em>owner</em> de un recurso <code>Game</code>.</td>
+<td>JWT (Bearer) + autorización por recurso</td>
+</tr>
+<tr>
+<td><strong>Servidor de juego</strong> (<code>GameServer</code>)</td>
+<td>Backend autoritativo del juego que envía puntuaciones en nombre de jugadores.</td>
+<td>API Key + firma HMAC-SHA256</td>
+</tr>
+<tr>
+<td><strong>Administrador</strong> (<code>Admin</code>)</td>
+<td>Moderación: revisar/invalidar puntuaciones sospechosas, desactivar juegos.</td>
+<td>JWT con rol <code>admin</code></td>
+</tr>
+<tr>
+<td><strong>Visitante anónimo</strong></td>
+<td>Consulta rankings públicos.</td>
+<td>Ninguno (limitado por IP)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="12-glosario">1.2 Glosario<a class="headerlink" href="#12-glosario" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Término</th>
+<th>Definición</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Score</strong></td>
+<td>Evento inmutable de puntuación enviado por un servidor de juego. Histórico completo.</td>
+</tr>
+<tr>
+<td><strong>Leaderboard entry</strong></td>
+<td>Mejor puntuación vigente de un jugador en un juego (una fila por par juego–jugador). Es la proyección que se ordena.</td>
+</tr>
+<tr>
+<td><strong>Posición absoluta</strong></td>
+<td>Rango 1-based del jugador dentro del juego (1 = mejor).</td>
+</tr>
+<tr>
+<td><strong>Posición relativa</strong></td>
+<td>Ventana de <em>k</em> jugadores por encima y por debajo de un jugador dado.</td>
+</tr>
+<tr>
+<td><strong>Percentil</strong></td>
+<td><code>100 × (1 − (rank − 1) / total)</code>; «estás en el top X %».</td>
+</tr>
+<tr>
+<td><strong>Orden de puntuación</strong></td>
+<td>Por juego: <code>HigherIsBetter</code> (arcade) o <code>LowerIsBetter</code> (speedrun/tiempo).</td>
+</tr>
+<tr>
+<td><strong>Desempate</strong></td>
+<td>A igual puntuación gana quien la consiguió <strong>antes</strong> (<code>AchievedAt</code> ascendente); luego <code>PlayerId</code>. Garantiza rangos únicos y deterministas.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-requerimientos-funcionales">2. Requerimientos Funcionales<a class="headerlink" href="#2-requerimientos-funcionales" title="Enlace a esta sección">#</a></h2>
+<p>Prioridad según <strong>MoSCoW</strong> (Must / Should / Could / Won't en esta versión). La columna <em>Fase</em> indica el mes objetivo de entrega.</p>
+<h3 id="21-autenticacion-y-cuentas">2.1 Autenticación y cuentas<a class="headerlink" href="#21-autenticacion-y-cuentas" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requerimiento</th>
+<th>Prioridad</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RF-01</strong></td>
+<td>El sistema debe permitir registrar un jugador con <code>username</code> (único, 3–32 caracteres <code>[a-zA-Z0-9_-]</code>), <code>email</code> (único, válido) y <code>password</code> (≥ 10 caracteres, al menos una letra y un dígito).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-02</strong></td>
+<td>El sistema debe permitir iniciar sesión con email + password y devolver un <strong>access token JWT</strong> (vida corta) y un <strong>refresh token</strong> (opaco, rotatorio).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-03</strong></td>
+<td>El sistema debe permitir renovar el access token mediante el refresh token, <strong>rotándolo</strong> e invalidando el anterior. Reutilizar un refresh token ya rotado revoca toda la familia (detección de robo).</td>
+<td>Should</td>
+<td>Dic</td>
+</tr>
+<tr>
+<td><strong>RF-04</strong></td>
+<td>El sistema debe permitir cerrar sesión revocando el refresh token actual.</td>
+<td>Should</td>
+<td>Dic</td>
+</tr>
+<tr>
+<td><strong>RF-05</strong></td>
+<td>Un jugador autenticado debe poder consultar su perfil (<code>/players/me</code>).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-06</strong></td>
+<td>Las credenciales inválidas deben devolver un error genérico que <strong>no revele</strong> si el email existe.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="22-gestion-de-juegos-y-credenciales">2.2 Gestión de juegos y credenciales<a class="headerlink" href="#22-gestion-de-juegos-y-credenciales" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requerimiento</th>
+<th>Prioridad</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RF-10</strong></td>
+<td>Un jugador autenticado debe poder registrar un juego (<code>name</code>, <code>slug</code> único, <code>description</code>, <code>scoreOrder</code>, <code>minScore</code>, <code>maxScore</code> opcionales). Pasa a ser su <strong>propietario</strong>.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-11</strong></td>
+<td>Cualquier usuario debe poder listar juegos activos (paginado) y consultar el detalle de un juego.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-12</strong></td>
+<td>El propietario debe poder actualizar metadatos del juego y <strong>archivarlo</strong> (soft delete: deja de aceptar scores, el ranking sigue siendo consultable).</td>
+<td>Should</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-13</strong></td>
+<td>El propietario debe poder <strong>emitir</strong> una API Key para su juego. El secreto se muestra <strong>una única vez</strong> en la respuesta de creación.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-14</strong></td>
+<td>El propietario debe poder listar las API Keys de su juego (solo prefijo/identificador, nombre, fechas; nunca el secreto).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-15</strong></td>
+<td>El propietario debe poder <strong>revocar</strong> una API Key; las peticiones posteriores con ella se rechazan con <code>401</code>.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-16</strong></td>
+<td>Un juego puede tener varias API Keys activas simultáneamente (máx. 5) para permitir <strong>rotación sin downtime</strong>.</td>
+<td>Should</td>
+<td>Ene</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="23-puntuaciones-y-clasificaciones">2.3 Puntuaciones y clasificaciones<a class="headerlink" href="#23-puntuaciones-y-clasificaciones" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requerimiento</th>
+<th>Prioridad</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RF-20</strong></td>
+<td>Un servidor de juego autenticado con API Key debe poder <strong>enviar una puntuación</strong> (<code>playerId</code>, <code>value</code> entero de 64 bits, <code>metadata</code> opcional ≤ 2 KB).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-21</strong></td>
+<td>Cada score se almacena como evento inmutable. Si mejora la mejor marca del jugador (según <code>scoreOrder</code>), se actualiza su <em>leaderboard entry</em> en la <strong>misma transacción</strong>.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-22</strong></td>
+<td>La respuesta del envío indica si fue <strong>nuevo récord personal</strong>, el rango resultante y el mejor score vigente.</td>
+<td>Should</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-23</strong></td>
+<td>Se rechazan scores fuera del rango <code>[minScore, maxScore]</code> configurado para el juego (<code>422</code>).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-24</strong></td>
+<td>Cualquier usuario debe poder consultar el <strong>Top N</strong> de un juego (<code>1 ≤ N ≤ 100</code>, por defecto 10).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-25</strong></td>
+<td>Cualquier usuario debe poder recorrer el ranking completo <strong>paginado</strong> (<code>page</code>, <code>pageSize ≤ 100</code>).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-26</strong></td>
+<td>Cualquier usuario debe poder consultar la <strong>posición absoluta</strong> de un jugador en un juego (rango, mejor score, total de jugadores, percentil).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-27</strong></td>
+<td>Cualquier usuario debe poder consultar la <strong>posición relativa</strong> de un jugador: <code>k</code> jugadores por encima y por debajo (<code>1 ≤ k ≤ 25</code>).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-28</strong></td>
+<td>Un jugador autenticado debe poder consultar su propia posición (<code>/leaderboard/me</code>) y su historial de scores por juego (paginado).</td>
+<td>Should</td>
+<td>Dic</td>
+</tr>
+<tr>
+<td><strong>RF-29</strong></td>
+<td>El envío de scores debe ser <strong>idempotente</strong> frente a reintentos: el mismo <code>nonce</code> para la misma API Key no crea un segundo score.</td>
+<td>Must</td>
+<td>Ene</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="24-anti-cheat-y-moderacion">2.4 Anti-cheat y moderación<a class="headerlink" href="#24-anti-cheat-y-moderacion" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requerimiento</th>
+<th>Prioridad</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RF-30</strong></td>
+<td>Las peticiones de envío de score deben ir <strong>firmadas con HMAC-SHA256</strong> (timestamp + nonce + hash del cuerpo). Firmas inválidas, timestamps fuera de ventana (±300 s) o nonces repetidos se rechazan.</td>
+<td>Must</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td><strong>RF-31</strong></td>
+<td>El sistema debe limitar la frecuencia de envío por API Key y por jugador (ver RNF-02).</td>
+<td>Must</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td><strong>RF-32</strong></td>
+<td>Los scores que superen umbrales de plausibilidad configurables (p. ej. <code>&gt; maxScore</code> o salto anómalo respecto al récord previo) se marcan como <code>PendingReview</code> y <strong>no</strong> entran en el ranking.</td>
+<td>Could</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td><strong>RF-33</strong></td>
+<td>Un administrador debe poder invalidar un score; el <em>leaderboard entry</em> del jugador se recalcula.</td>
+<td>Could</td>
+<td>Mar</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="25-calidad-de-api-transversal">2.5 Calidad de API (transversal)<a class="headerlink" href="#25-calidad-de-api-transversal" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requerimiento</th>
+<th>Prioridad</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RF-40</strong></td>
+<td>Todas las colecciones se devuelven <strong>paginadas</strong> con un sobre común (<code>items</code>, <code>page</code>, <code>pageSize</code>, <code>totalCount</code>, <code>totalPages</code>).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-41</strong></td>
+<td>Toda entrada se valida con <strong>FluentValidation</strong>; los errores de validación devuelven <code>400</code> con <code>ValidationProblemDetails</code> (errores por campo).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-42</strong></td>
+<td>Todas las respuestas de error siguen <strong>RFC 7807 / RFC 9457 ProblemDetails</strong>, incluyendo <code>traceId</code> y un <code>code</code> de error estable.</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-43</strong></td>
+<td>La API está <strong>versionada por URL</strong> (<code>/api/v1</code>) y documentada con <strong>OpenAPI 3</strong> + Swagger UI (con esquemas de seguridad Bearer y ApiKey).</td>
+<td>Must</td>
+<td>Nov</td>
+</tr>
+<tr>
+<td><strong>RF-44</strong></td>
+<td>El servicio expone <strong>health checks</strong> <code>/health/live</code> y <code>/health/ready</code> (este último comprueba PostgreSQL).</td>
+<td>Must</td>
+<td>Mar</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-requerimientos-no-funcionales">3. Requerimientos No Funcionales<a class="headerlink" href="#3-requerimientos-no-funcionales" title="Enlace a esta sección">#</a></h2>
+<p>Cada RNF tiene un <strong>criterio medible</strong> para poder verificarlo (tests, pipeline o benchmark).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Categoría</th>
+<th>Requerimiento</th>
+<th>Criterio de verificación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RNF-01</strong></td>
+<td><strong>Rendimiento</strong></td>
+<td>Lecturas de ranking (Top N, posición, ventana) con p95 &lt; <strong>100 ms</strong> y envío de score con p95 &lt; <strong>150 ms</strong>, con 100 000 jugadores en un juego, en el entorno <code>docker compose</code> local. Consultas de rango en O(log n + k) apoyadas en índice compuesto.</td>
+<td>Benchmark con <code>k6</code> (Marzo) + <code>EXPLAIN ANALYZE</code> documentado sin <em>Seq Scan</em> en rutas calientes.</td>
+</tr>
+<tr>
+<td><strong>RNF-02</strong></td>
+<td><strong>Seguridad</strong></td>
+<td>Cumplir <strong>OWASP API Security Top 10 (2023)</strong>: contraseñas con PBKDF2 (<code>PasswordHasher&lt;T&gt;</code>), JWT HS256 con secreto ≥ 256 bits (vida 15 min), refresh tokens hasheados en BD, API Keys cifradas en reposo (Data Protection), HMAC con comparación en tiempo constante, rate limiting (auth: 5 req/min/IP; submit: 60 req/min/API Key; lecturas: 120 req/min/IP), HTTPS, cabeceras de seguridad, sin secretos en el repositorio.</td>
+<td>Tests de integración de autorización (401/403/429), <code>dotnet list package --vulnerable</code> en CI, secret scanning de GitHub.</td>
+</tr>
+<tr>
+<td><strong>RNF-03</strong></td>
+<td><strong>Mantenibilidad</strong></td>
+<td>Clean Architecture con dependencias apuntando hacia el Dominio; ≥ <strong>80 %</strong> de cobertura de líneas en Domain + Application; análisis estático sin warnings (<code>TreatWarningsAsErrors</code>).</td>
+<td>Tests de arquitectura (NetArchTest), umbral de cobertura en CI, <code>dotnet format --verify-no-changes</code>.</td>
+</tr>
+<tr>
+<td><strong>RNF-04</strong></td>
+<td><strong>Testabilidad</strong></td>
+<td>Toda regla de negocio testeable sin infraestructura; tests de integración contra <strong>PostgreSQL real</strong> (Testcontainers), no InMemory. Tiempo del suite completo &lt; 3 min en CI.</td>
+<td>Pipeline de GitHub Actions.</td>
+</tr>
+<tr>
+<td><strong>RNF-05</strong></td>
+<td><strong>Observabilidad</strong></td>
+<td>Logs estructurados JSON (Serilog) con <code>TraceId</code>, <code>RequestPath</code>, <code>StatusCode</code>, <code>Elapsed</code>, sin PII ni secretos. Correlación entre log y <code>traceId</code> del ProblemDetails.</td>
+<td>Test que verifica que el <code>traceId</code> de un 500 aparece en el log; revisión de plantillas de log.</td>
+</tr>
+<tr>
+<td><strong>RNF-06</strong></td>
+<td><strong>Portabilidad / DX</strong></td>
+<td><code>git clone</code> → <code>docker compose up</code> → Swagger operativo en <code>http://localhost:8080/swagger</code> en &lt; 2 min sin instalar .NET. Migraciones aplicadas automáticamente en entorno <code>Development</code>.</td>
+<td>Job de CI <em>smoke test</em> que levanta compose y hace <code>curl</code> a <code>/health/ready</code>.</td>
+</tr>
+<tr>
+<td><strong>RNF-07</strong></td>
+<td><strong>Fiabilidad / Integridad</strong></td>
+<td>Envío de score + actualización del ranking atómicos (transacción); concurrencia sobre la misma entrada resuelta con <code>INSERT … ON CONFLICT DO UPDATE</code> condicional. Ningún score aceptado se pierde.</td>
+<td>Test de integración concurrente (N envíos paralelos → estado consistente).</td>
+</tr>
+<tr>
+<td><strong>RNF-08</strong></td>
+<td><strong>Usabilidad de la API</strong></td>
+<td>Contrato OpenAPI completo (ejemplos, códigos de respuesta, esquemas de error). Nombres de recursos en plural, <code>kebab-case</code> en rutas, <code>camelCase</code> en JSON, fechas ISO-8601 UTC.</td>
+<td>Revisión de Swagger; test que valida que el documento OpenAPI se genera sin errores.</td>
+</tr>
+<tr>
+<td><strong>RNF-09</strong></td>
+<td><strong>Escalabilidad (horizonte)</strong></td>
+<td>Diseño <em>stateless</em> (JWT, sin sesión en memoria) que permita varias réplicas. Límites conocidos documentados (rate limiting en memoria por instancia; ranking en PostgreSQL).</td>
+<td>ADR «Mejoras futuras» (Redis sorted sets, rate limiting distribuido).</td>
+</tr>
+<tr>
+<td><strong>RNF-10</strong></td>
+<td><strong>Privacidad</strong></td>
+<td>Rankings públicos exponen solo <code>playerId</code> y <code>username</code>; nunca email. Logs sin email ni tokens.</td>
+<td>Tests de contrato sobre DTOs públicos.</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="4-historias-de-usuario">4. Historias de Usuario<a class="headerlink" href="#4-historias-de-usuario" title="Enlace a esta sección">#</a></h2>
+<p>Formato: <em>Como … quiero … para …</em>, con criterios de aceptación en <strong>Gherkin</strong>. Cada historia referencia los RF que cubre.</p>
+<h3 id="us-01-registro-de-jugador-rf-01-rf-41-rf-42">US-01 · Registro de jugador (RF-01, RF-41, RF-42)<a class="headerlink" href="#us-01-registro-de-jugador-rf-01-rf-41-rf-42" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> jugador <em>quiero</em> crear una cuenta <em>para</em> aparecer en las clasificaciones con mi nombre.</p>
+<pre><code class="language-gherkin">Feature: Registro de jugadores
+
+  Scenario: Registro correcto
+    Given no existe ningún jugador con email &quot;ana@example.com&quot;
+    When envío POST /api/v1/auth/register con username &quot;ana_dev&quot;, email &quot;ana@example.com&quot; y password &quot;Sup3rSecret!&quot;
+    Then la respuesta es 201 Created
+    And la cabecera Location apunta a /api/v1/players/{id}
+    And el cuerpo no contiene el campo &quot;password&quot; ni &quot;passwordHash&quot;
+
+  Scenario: Email duplicado
+    Given existe un jugador con email &quot;ana@example.com&quot;
+    When envío POST /api/v1/auth/register con email &quot;ana@example.com&quot;
+    Then la respuesta es 409 Conflict
+    And el cuerpo es un ProblemDetails con code &quot;player.email_taken&quot;
+
+  Scenario Outline: Validación de entrada
+    When envío POST /api/v1/auth/register con &lt;campo&gt; igual a &quot;&lt;valor&gt;&quot;
+    Then la respuesta es 400 Bad Request
+    And el ProblemDetails contiene un error para el campo &quot;&lt;campo&gt;&quot;
+
+    Examples:
+      | campo    | valor        |
+      | username | ab           |
+      | email    | no-es-email  |
+      | password | corta        |
+</code></pre>
+<h3 id="us-02-inicio-de-sesion-rf-02-rf-06">US-02 · Inicio de sesión (RF-02, RF-06)<a class="headerlink" href="#us-02-inicio-de-sesion-rf-02-rf-06" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> jugador registrado <em>quiero</em> iniciar sesión <em>para</em> obtener un token con el que usar la API.</p>
+<pre><code class="language-gherkin">Feature: Login
+
+  Scenario: Credenciales válidas
+    Given existe el jugador &quot;ana@example.com&quot; con password &quot;Sup3rSecret!&quot;
+    When envío POST /api/v1/auth/login con esas credenciales
+    Then la respuesta es 200 OK
+    And el cuerpo contiene &quot;accessToken&quot;, &quot;refreshToken&quot; y &quot;expiresIn&quot; = 900
+    And el accessToken contiene el claim &quot;sub&quot; con el id del jugador
+
+  Scenario: Credenciales inválidas no revelan si el email existe
+    When envío POST /api/v1/auth/login con email &quot;nadie@example.com&quot;
+    And envío POST /api/v1/auth/login con email &quot;ana@example.com&quot; y password incorrecta
+    Then ambas respuestas son 401 Unauthorized
+    And ambas tienen el mismo code &quot;auth.invalid_credentials&quot;
+
+  Scenario: Fuerza bruta limitada
+    Given he enviado 5 logins fallidos desde la misma IP en el último minuto
+    When envío otro POST /api/v1/auth/login
+    Then la respuesta es 429 Too Many Requests
+    And incluye la cabecera Retry-After
+</code></pre>
+<h3 id="us-03-registrar-un-juego-y-obtener-api-key-rf-10-rf-13-rf-14">US-03 · Registrar un juego y obtener API Key (RF-10, RF-13, RF-14)<a class="headerlink" href="#us-03-registrar-un-juego-y-obtener-api-key-rf-10-rf-13-rf-14" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> desarrollador de un juego <em>quiero</em> registrar mi juego y generar una API Key <em>para</em> que mi servidor pueda enviar puntuaciones.</p>
+<pre><code class="language-gherkin">Feature: Registro de juegos y credenciales
+
+  Scenario: Crear juego
+    Given estoy autenticado como &quot;ana_dev&quot;
+    When envío POST /api/v1/games con name &quot;Space Blaster&quot;, slug &quot;space-blaster&quot; y scoreOrder &quot;HigherIsBetter&quot;
+    Then la respuesta es 201 Created
+    And &quot;ana_dev&quot; es propietaria del juego
+
+  Scenario: Emitir API Key (secreto visible una sola vez)
+    Given soy propietaria del juego &quot;space-blaster&quot;
+    When envío POST /api/v1/games/{gameId}/api-keys con name &quot;prod-server&quot;
+    Then la respuesta es 201 Created
+    And el cuerpo contiene &quot;keyId&quot; y &quot;secret&quot;
+    When envío GET /api/v1/games/{gameId}/api-keys
+    Then la lista contiene &quot;keyId&quot; y &quot;name&quot; pero ningún elemento contiene &quot;secret&quot;
+
+  Scenario: Un no-propietario no puede gestionar claves
+    Given estoy autenticado como &quot;bob&quot;
+    And &quot;bob&quot; no es propietario de &quot;space-blaster&quot;
+    When envío POST /api/v1/games/{gameId}/api-keys
+    Then la respuesta es 404 Not Found
+</code></pre>
+<blockquote>
+<p>Se devuelve <code>404</code> (no <code>403</code>) para no filtrar la existencia de recursos ajenos (OWASP API1 — BOLA).</p>
+</blockquote>
+<h3 id="us-04-enviar-puntuacion-desde-el-servidor-del-juego-rf-20rf-23-rf-29-rf-30">US-04 · Enviar puntuación desde el servidor del juego (RF-20…RF-23, RF-29, RF-30)<a class="headerlink" href="#us-04-enviar-puntuacion-desde-el-servidor-del-juego-rf-20rf-23-rf-29-rf-30" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> servidor de juego <em>quiero</em> enviar la puntuación de una partida <em>para</em> que el ranking se actualice.</p>
+<pre><code class="language-gherkin">Feature: Envío de puntuaciones
+
+  Background:
+    Given el juego &quot;space-blaster&quot; con scoreOrder &quot;HigherIsBetter&quot; y maxScore 1000000
+    And una API Key activa &quot;lbk_7f3a…&quot; con su secreto
+    And el jugador &quot;ana_dev&quot; con mejor puntuación 5000
+
+  Scenario: Nuevo récord personal
+    When el servidor envía POST /api/v1/games/{gameId}/scores con playerId de &quot;ana_dev&quot; y value 7200 correctamente firmado
+    Then la respuesta es 201 Created
+    And el cuerpo contiene &quot;isPersonalBest&quot; = true, &quot;bestScore&quot; = 7200 y &quot;rank&quot;
+
+  Scenario: Puntuación inferior al récord
+    When el servidor envía un score de 3000 para &quot;ana_dev&quot;
+    Then la respuesta es 201 Created
+    And &quot;isPersonalBest&quot; = false y &quot;bestScore&quot; = 5000
+    And el score queda registrado en el historial
+
+  Scenario: Firma inválida
+    When el servidor envía un score con la cabecera X-Signature alterada
+    Then la respuesta es 401 Unauthorized con code &quot;apikey.invalid_signature&quot;
+    And no se registra ningún score
+
+  Scenario: Replay de la misma petición
+    Given el servidor ya envió un score con nonce &quot;b1946ac9&quot;
+    When reenvía exactamente la misma petición firmada
+    Then la respuesta es 200 OK con el mismo resultado (idempotente)
+    And existe un único score con ese nonce
+
+  Scenario: Timestamp fuera de ventana
+    When el servidor envía un score con X-Timestamp de hace 10 minutos
+    Then la respuesta es 401 Unauthorized con code &quot;apikey.stale_request&quot;
+
+  Scenario: Puntuación fuera de rango
+    When el servidor envía un score de 2000000
+    Then la respuesta es 422 Unprocessable Entity con code &quot;score.out_of_range&quot;
+
+  Scenario: API Key revocada
+    Given la API Key ha sido revocada
+    When el servidor envía cualquier score
+    Then la respuesta es 401 Unauthorized
+</code></pre>
+<h3 id="us-05-consultar-el-top-n-rf-24-rf-40">US-05 · Consultar el Top N (RF-24, RF-40)<a class="headerlink" href="#us-05-consultar-el-top-n-rf-24-rf-40" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> visitante <em>quiero</em> ver los mejores jugadores de un juego <em>para</em> conocer la clasificación.</p>
+<pre><code class="language-gherkin">Feature: Top N
+
+  Scenario: Top 3 con desempate por antigüedad
+    Given el juego &quot;space-blaster&quot; con las entradas:
+      | jugador | mejor | conseguido          |
+      | ana     | 900   | 2026-11-01T10:00:00Z |
+      | bob     | 900   | 2026-11-01T09:00:00Z |
+      | carla   | 1200  | 2026-11-02T08:00:00Z |
+      | dani    | 100   | 2026-11-03T08:00:00Z |
+    When envío GET /api/v1/games/{gameId}/leaderboard/top?n=3
+    Then la respuesta es 200 OK
+    And el orden es &quot;carla&quot; (1), &quot;bob&quot; (2), &quot;ana&quot; (3)
+
+  Scenario: Juego con orden LowerIsBetter
+    Given un juego &quot;speedrun&quot; con scoreOrder &quot;LowerIsBetter&quot;
+    And &quot;ana&quot; con 61000 ms y &quot;bob&quot; con 59000 ms
+    When consulto el top 2
+    Then &quot;bob&quot; es el rango 1
+
+  Scenario: N fuera de límites
+    When envío GET /api/v1/games/{gameId}/leaderboard/top?n=500
+    Then la respuesta es 400 Bad Request con error en el campo &quot;n&quot;
+</code></pre>
+<h3 id="us-06-consultar-mi-posicion-absoluta-y-relativa-rf-26-rf-27-rf-28">US-06 · Consultar mi posición absoluta y relativa (RF-26, RF-27, RF-28)<a class="headerlink" href="#us-06-consultar-mi-posicion-absoluta-y-relativa-rf-26-rf-27-rf-28" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> jugador <em>quiero</em> saber en qué posición estoy y quién está justo por encima y por debajo <em>para</em> tener un objetivo alcanzable.</p>
+<pre><code class="language-gherkin">Feature: Posición de un jugador
+
+  Scenario: Posición absoluta
+    Given 1000 jugadores en &quot;space-blaster&quot; y &quot;ana&quot; es la 42ª mejor
+    When envío GET /api/v1/games/{gameId}/leaderboard/players/{anaId}
+    Then la respuesta es 200 OK
+    And &quot;rank&quot; = 42, &quot;totalPlayers&quot; = 1000 y &quot;percentile&quot; = 95.9
+
+  Scenario: Ventana relativa
+    When envío GET /api/v1/games/{gameId}/leaderboard/players/{anaId}/around?range=2
+    Then recibo 5 entradas con rangos 40, 41, 42, 43, 44
+    And la entrada de rango 42 tiene &quot;isTarget&quot; = true
+
+  Scenario: Ventana en el borde superior
+    Given &quot;carla&quot; es la número 1
+    When consulto su ventana con range=2
+    Then recibo las entradas con rangos 1, 2, 3
+
+  Scenario: Jugador sin puntuaciones en el juego
+    When consulto la posición de un jugador sin entradas
+    Then la respuesta es 404 Not Found con code &quot;leaderboard.entry_not_found&quot;
+
+  Scenario: Mi posición
+    Given estoy autenticado como &quot;ana&quot;
+    When envío GET /api/v1/games/{gameId}/leaderboard/me
+    Then obtengo el mismo resultado que para /players/{anaId}
+</code></pre>
+<h3 id="us-07-revocar-y-rotar-api-keys-rf-15-rf-16">US-07 · Revocar y rotar API Keys (RF-15, RF-16)<a class="headerlink" href="#us-07-revocar-y-rotar-api-keys-rf-15-rf-16" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> propietaria de un juego <em>quiero</em> rotar las credenciales de mi servidor <em>para</em> responder a una filtración sin cortar el servicio.</p>
+<pre><code class="language-gherkin">Feature: Rotación de API Keys
+
+  Scenario: Rotación sin downtime
+    Given el juego tiene la API Key &quot;A&quot; activa
+    When emito la API Key &quot;B&quot;
+    And despliego mi servidor con &quot;B&quot;
+    And revoco &quot;A&quot;
+    Then las peticiones firmadas con &quot;B&quot; devuelven 201
+    And las peticiones firmadas con &quot;A&quot; devuelven 401
+
+  Scenario: Límite de claves activas
+    Given el juego tiene 5 API Keys activas
+    When intento emitir otra
+    Then la respuesta es 409 Conflict con code &quot;apikey.limit_reached&quot;
+</code></pre>
+<h3 id="us-08-operar-y-monitorizar-el-servicio-rf-44-rnf-05-rnf-06">US-08 · Operar y monitorizar el servicio (RF-44, RNF-05, RNF-06)<a class="headerlink" href="#us-08-operar-y-monitorizar-el-servicio-rf-44-rnf-05-rnf-06" title="Enlace a esta sección">#</a></h3>
+<p><em>Como</em> ingeniero de operaciones <em>quiero</em> health checks y logs estructurados <em>para</em> detectar y diagnosticar fallos.</p>
+<pre><code class="language-gherkin">Feature: Operabilidad
+
+  Scenario: Arranque con Docker Compose
+    Given un clon limpio del repositorio
+    When ejecuto &quot;docker compose up -d&quot;
+    Then en menos de 2 minutos GET /health/ready devuelve 200 &quot;Healthy&quot;
+    And GET /swagger devuelve la UI de Swagger
+
+  Scenario: Base de datos caída
+    Given el contenedor de PostgreSQL está detenido
+    When consulto GET /health/ready
+    Then la respuesta es 503 &quot;Unhealthy&quot;
+    But GET /health/live devuelve 200
+
+  Scenario: Trazabilidad de errores
+    When una petición provoca un error no controlado
+    Then la respuesta es 500 con ProblemDetails que incluye &quot;traceId&quot;
+    And existe una entrada de log de nivel Error con la misma TraceId
+    And el ProblemDetails no incluye el stack trace fuera de Development
+</code></pre>
+<hr />
+<h2 id="5-supuestos-restricciones-y-fuera-de-alcance">5. Supuestos, restricciones y fuera de alcance<a class="headerlink" href="#5-supuestos-restricciones-y-fuera-de-alcance" title="Enlace a esta sección">#</a></h2>
+<p><strong>Supuestos</strong></p>
+<ul>
+<li>Los servidores de juego son <strong>autoritativos</strong> (no se aceptan scores directamente desde clientes de jugador); el anti-cheat del servidor protege el canal, no la lógica de juego.</li>
+<li>Volumen objetivo del portafolio: decenas de juegos, ≤ 1 M de entradas por juego.</li>
+<li>Un único despliegue (una instancia) es suficiente; el diseño no impide escalar horizontalmente.</li>
+</ul>
+<p><strong>Restricciones</strong></p>
+<ul>
+<li>Stack cerrado: ASP.NET Core (.NET 10 LTS), EF Core + PostgreSQL, JWT, OpenAPI/Swagger, xUnit, Docker, GitHub Actions, Serilog.</li>
+<li>Calendario: Noviembre → Marzo, con un entregable demostrable al final de cada mes.</li>
+</ul>
+<p><strong>Fuera de alcance</strong> (se documentarán como ADR de <em>Mejoras futuras</em>)</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tema</th>
+<th>Motivo</th>
+<th>Alternativa futura</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Frontend</td>
+<td>El foco es el diseño de API.</td>
+<td>Swagger UI cubre la demo.</td>
+</tr>
+<tr>
+<td>WebSockets / tiempo real</td>
+<td>Complejidad de infraestructura no justificada.</td>
+<td>SignalR para «nuevo líder» en vivo.</td>
+</tr>
+<tr>
+<td>Microservicios</td>
+<td>Un monolito modular es la arquitectura adecuada a esta escala.</td>
+<td>Extraer <em>Scoring</em> si el throughput lo exige.</td>
+</tr>
+<tr>
+<td>Redis cache</td>
+<td>PostgreSQL con índices adecuados cumple RNF-01.</td>
+<td>Redis Sorted Sets (<code>ZADD</code>/<code>ZREVRANK</code>) para rankings de &gt; 10 M entradas; rate limiting distribuido.</td>
+</tr>
+<tr>
+<td>Temporadas / rankings por periodo</td>
+<td>Aumenta el modelo sin aportar señal nueva.</td>
+<td>Entidad <code>Season</code> + particionado.</td>
+</tr>
+<tr>
+<td>OAuth externo / verificación de email</td>
+<td>No aporta al objetivo de demostración.</td>
+<td>OpenID Connect (Entra ID / Auth0).</td>
+</tr>
+</tbody>
+</table></div>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="requirements.md"><code>docs/requirements.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

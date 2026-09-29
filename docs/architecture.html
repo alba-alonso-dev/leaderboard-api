@@ -1,0 +1,1297 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Capas, datos, endpoints y seguridad">
+<title>Arquitectura y Diseño · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <ul>
+        <li><a href="index.html">Inicio<small>Índice de la documentación de diseño</small></a></li>
+        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="architecture.html" aria-current="page">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#1-vision-general">1. Visión general</a><ul>
+<li><a href="#11-principios-de-diseno">1.1 Principios de diseño</a></li>
+</ul>
+</li>
+<li><a href="#2-estructura-de-capas-clean-architecture">2. Estructura de capas (Clean Architecture)</a><ul>
+<li><a href="#21-estructura-de-la-solucion-objetivo-en-enero">2.1 Estructura de la solución (objetivo en Enero)</a></li>
+<li><a href="#22-responsabilidades-por-capa">2.2 Responsabilidades por capa</a></li>
+<li><a href="#23-flujo-de-una-peticion-envio-de-score">2.3 Flujo de una petición (envío de score)</a></li>
+</ul>
+</li>
+<li><a href="#3-modelo-de-datos">3. Modelo de datos</a><ul>
+<li><a href="#31-diagrama-entidad-relacion">3.1 Diagrama Entidad-Relación</a></li>
+<li><a href="#32-decisiones-clave-del-modelo">3.2 Decisiones clave del modelo</a></li>
+<li><a href="#33-indices">3.3 Índices</a></li>
+<li><a href="#34-consultas-criticas-referencia-de-implementacion">3.4 Consultas críticas (referencia de implementación)</a></li>
+</ul>
+</li>
+<li><a href="#4-diseno-de-endpoints-restful">4. Diseño de Endpoints RESTful</a><ul>
+<li><a href="#41-catalogo">4.1 Catálogo</a></li>
+<li><a href="#42-payloads-principales">4.2 Payloads principales</a></li>
+<li><a href="#43-errores-estandarizados-rfc-9457-problemdetails">4.3 Errores estandarizados (RFC 9457 ProblemDetails)</a></li>
+<li><a href="#44-paginacion">4.4 Paginación</a></li>
+</ul>
+</li>
+<li><a href="#5-estrategia-de-seguridad">5. Estrategia de Seguridad</a><ul>
+<li><a href="#51-dos-esquemas-de-autenticacion">5.1 Dos esquemas de autenticación</a></li>
+<li><a href="#52-flujo-jwt-jugadores">5.2 Flujo JWT (jugadores)</a></li>
+<li><a href="#53-flujo-api-key-hmac-servidores-de-juego">5.3 Flujo API Key + HMAC (servidores de juego)</a></li>
+<li><a href="#54-defensa-en-profundidad-contra-puntuaciones-tramposas">5.4 Defensa en profundidad contra puntuaciones tramposas</a></li>
+<li><a href="#55-controles-owasp-api-top-10-2023">5.5 Controles OWASP API Top 10 (2023)</a></li>
+<li><a href="#56-gestion-de-secretos">5.6 Gestión de secretos</a></li>
+</ul>
+</li>
+<li><a href="#6-aspectos-transversales">6. Aspectos transversales</a><ul>
+<li><a href="#61-despliegue-local-docker-compose">6.1 Despliegue local (Docker Compose)</a></li>
+</ul>
+</li>
+<li><a href="#7-architecture-decision-records">7. Architecture Decision Records</a><ul>
+<li><a href="#71-resumen-de-decisiones-tecnicas-ya-tomadas">7.1 Resumen de decisiones técnicas ya tomadas</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="arquitectura-y-diseno">Arquitectura y Diseño<a class="headerlink" href="#arquitectura-y-diseno" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Documento:</strong> <code>docs/architecture.md</code> · <strong>Estado:</strong> Diseño objetivo (se implementa progresivamente Nov → Mar) · <strong>Versión:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="roadmap-and-tasks.html">Roadmap y tareas</a> · <a href="coding-standards.html">Estándares de código</a></p>
+</blockquote>
+<h2 id="1-vision-general">1. Visión general<a class="headerlink" href="#1-vision-general" title="Enlace a esta sección">#</a></h2>
+<p>Monolito modular en <strong>ASP.NET Core (.NET 10 LTS)</strong> organizado con <strong>Clean Architecture</strong>, persistencia en <strong>PostgreSQL</strong> vía <strong>EF Core</strong>, y dos canales de autenticación independientes: <strong>JWT</strong> para personas y <strong>API Key + HMAC</strong> para servidores de juego.</p>
+<pre class="mermaid">flowchart LR
+    subgraph Clients[&quot;Clientes&quot;]
+        P[&quot;👤 Jugador / Propietario&lt;br/&gt;(Swagger, Postman, app)&quot;]
+        GS[&quot;🎮 Servidor de juego&lt;br/&gt;(autoritativo)&quot;]
+        V[&quot;🌐 Visitante anónimo&quot;]
+    end
+
+    subgraph Api[&quot;Leaderboard API · contenedor&quot;]
+        MW[&quot;Pipeline HTTP&lt;br/&gt;Serilog · ExceptionHandler · RateLimiter&lt;br/&gt;AuthN (JWT | ApiKey+HMAC) · AuthZ&quot;]
+        EP[&quot;Endpoints /api/v1&lt;br/&gt;auth · games · api-keys · scores · leaderboard&quot;]
+        APP[&quot;Application&lt;br/&gt;Commands · Queries · Validators&quot;]
+        DOM[&quot;Domain&lt;br/&gt;Player · Game · Score · LeaderboardEntry&quot;]
+        INF[&quot;Infrastructure&lt;br/&gt;EF Core · Npgsql · JWT · Data Protection&quot;]
+    end
+
+    DB[(&quot;PostgreSQL 18&quot;)]
+    LOG[[&quot;stdout JSON&lt;br/&gt;(Serilog)&quot;]]
+
+    P -- &quot;Bearer JWT&quot; --&gt; MW
+    GS -- &quot;X-Api-Key + X-Signature&quot; --&gt; MW
+    V -- &quot;anónimo&quot; --&gt; MW
+    MW --&gt; EP --&gt; APP --&gt; DOM
+    INF -. &quot;implementa puertos&quot; .-&gt; APP
+    INF --&gt; DB
+    MW --&gt; LOG
+</pre>
+<h3 id="11-principios-de-diseno">1.1 Principios de diseño<a class="headerlink" href="#11-principios-de-diseno" title="Enlace a esta sección">#</a></h3>
+<ol>
+<li><strong>La regla de dependencia es sagrada:</strong> <code>Domain</code> no conoce a nadie; <code>Application</code> solo conoce <code>Domain</code>; <code>Infrastructure</code> y <code>Api</code> dependen hacia dentro. Verificado con tests de arquitectura.</li>
+<li><strong>Escritura separada de lectura (CQRS liviano):</strong> los comandos pasan por el modelo de dominio y repositorios; las consultas de ranking son proyecciones SQL optimizadas (sin cargar agregados).</li>
+<li><strong>Seguro por defecto:</strong> todo endpoint requiere autenticación salvo que se marque explícitamente <code>AllowAnonymous</code>; todo recurso de propietario se autoriza por recurso.</li>
+<li><strong>Errores como contrato:</strong> cada fallo esperado tiene un <code>code</code> estable y se traduce a ProblemDetails en un único punto.</li>
+<li><strong>Evolución incremental:</strong> noviembre arranca con un único proyecto <em>organizado por carpetas que ya reflejan las capas</em>, de modo que el refactor de enero sea mover carpetas a proyectos, no reescribir.</li>
+</ol>
+<hr />
+<h2 id="2-estructura-de-capas-clean-architecture">2. Estructura de capas (Clean Architecture)<a class="headerlink" href="#2-estructura-de-capas-clean-architecture" title="Enlace a esta sección">#</a></h2>
+<pre class="mermaid">flowchart TB
+    API[&quot;&lt;b&gt;Leaderboard.Api&lt;/b&gt;&lt;br/&gt;Endpoints (Minimal APIs) · Auth handlers&lt;br/&gt;ProblemDetails · OpenAPI · Rate limiting · Health checks&lt;br/&gt;Composition root (Program.cs)&quot;]
+    INF[&quot;&lt;b&gt;Leaderboard.Infrastructure&lt;/b&gt;&lt;br/&gt;AppDbContext · Configuraciones EF · Migraciones&lt;br/&gt;Repositorios · Read services (SQL) · JwtTokenService&lt;br/&gt;PasswordHasher · ApiKeySecretProtector · TimeProvider&quot;]
+    APP[&quot;&lt;b&gt;Leaderboard.Application&lt;/b&gt;&lt;br/&gt;Commands/Queries + Handlers · DTOs · Validators&lt;br/&gt;Puertos: IRepository, IUnitOfWork, ITokenService,&lt;br/&gt;ILeaderboardReadService, ICurrentUser&quot;]
+    DOM[&quot;&lt;b&gt;Leaderboard.Domain&lt;/b&gt;&lt;br/&gt;Entidades · Value Objects · Enums&lt;br/&gt;Reglas (ScoreOrder, rango) · Errores de dominio&quot;]
+
+    API --&gt; APP
+    API --&gt; INF
+    INF --&gt; APP
+    APP --&gt; DOM
+    INF --&gt; DOM
+</pre>
+<h3 id="21-estructura-de-la-solucion-objetivo-en-enero">2.1 Estructura de la solución (objetivo en Enero)<a class="headerlink" href="#21-estructura-de-la-solucion-objetivo-en-enero" title="Enlace a esta sección">#</a></h3>
+<pre><code class="language-text">leaderboard-api/
+├── src/
+│   ├── Leaderboard.Domain/
+│   │   ├── Common/            # Entity, AggregateRoot, Error, Result&lt;T&gt;
+│   │   ├── Players/           # Player, Username (VO), Email (VO), PlayerErrors
+│   │   ├── Games/             # Game, GameSlug (VO), ScoreOrder, ScoreRange, GameApiKey
+│   │   └── Scores/            # Score, LeaderboardEntry, ScoreStatus, ScoreErrors
+│   ├── Leaderboard.Application/
+│   │   ├── Abstractions/      # ICommandHandler&lt;,&gt;, IQueryHandler&lt;,&gt;, IUnitOfWork, ICurrentUser, IClock…
+│   │   ├── Auth/              # Register, Login, Refresh, Logout
+│   │   ├── Games/             # CreateGame, UpdateGame, ArchiveGame, ListGames, GetGame
+│   │   ├── ApiKeys/           # IssueApiKey, RevokeApiKey, ListApiKeys
+│   │   ├── Scores/            # SubmitScore, GetPlayerScoreHistory
+│   │   ├── Leaderboards/      # GetTop, GetPage, GetPlayerRank, GetAroundPlayer
+│   │   └── Common/            # PagedResult&lt;T&gt;, PageRequest, ValidationBehavior (decorator)
+│   ├── Leaderboard.Infrastructure/
+│   │   ├── Persistence/       # AppDbContext, Configurations/, Migrations/, Repositories/
+│   │   ├── ReadModels/        # LeaderboardReadService (SQL/LINQ proyectado)
+│   │   ├── Security/          # JwtTokenService, RefreshTokenService, ApiKeySecretProtector
+│   │   └── DependencyInjection.cs
+│   └── Leaderboard.Api/
+│       ├── Endpoints/         # AuthEndpoints, GamesEndpoints, ScoresEndpoints, LeaderboardEndpoints
+│       ├── Authentication/    # ApiKeyHmacAuthenticationHandler
+│       ├── ErrorHandling/     # GlobalExceptionHandler, ResultExtensions (Result → IResult)
+│       ├── OpenApi/           # Transformers (security schemes, ejemplos)
+│       └── Program.cs
+├── tests/
+│   ├── Leaderboard.Domain.UnitTests/
+│   ├── Leaderboard.Application.UnitTests/
+│   ├── Leaderboard.Api.IntegrationTests/     # WebApplicationFactory + Testcontainers
+│   └── Leaderboard.ArchitectureTests/        # NetArchTest
+├── docs/                   # Este diseño + ADRs (docs/adr/)
+├── Dockerfile · compose.yaml · Directory.Build.props · Directory.Packages.props
+└── .github/workflows/ci.yml
+</code></pre>
+<h3 id="22-responsabilidades-por-capa">2.2 Responsabilidades por capa<a class="headerlink" href="#22-responsabilidades-por-capa" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Contiene</th>
+<th>No contiene</th>
+<th>Paquetes permitidos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Domain</strong></td>
+<td>Entidades con invariantes, VOs inmutables, enums, errores de dominio, lógica de «¿es mejor este score?»</td>
+<td>EF, ASP.NET, DTOs, logging</td>
+<td>Ninguno (solo BCL)</td>
+</tr>
+<tr>
+<td><strong>Application</strong></td>
+<td>Casos de uso (handlers), validadores, DTOs de entrada/salida, interfaces (puertos)</td>
+<td><code>DbContext</code>, <code>HttpContext</code>, SQL</td>
+<td>FluentValidation, <code>Microsoft.Extensions.*.Abstractions</code></td>
+</tr>
+<tr>
+<td><strong>Infrastructure</strong></td>
+<td>Implementaciones de puertos: EF Core, repositorios, read services, JWT, cifrado</td>
+<td>Endpoints, reglas de negocio</td>
+<td>EF Core, Npgsql, <code>System.IdentityModel.Tokens.Jwt</code>, Data Protection</td>
+</tr>
+<tr>
+<td><strong>Api</strong></td>
+<td>HTTP: rutas, binding, authN/authZ, mapeo <code>Result → IResult</code>, OpenAPI, middleware</td>
+<td>Reglas de negocio, SQL</td>
+<td>ASP.NET Core, Serilog, Swashbuckle UI, HealthChecks</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="23-flujo-de-una-peticion-envio-de-score">2.3 Flujo de una petición (envío de score)<a class="headerlink" href="#23-flujo-de-una-peticion-envio-de-score" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    participant GS as Servidor de juego
+    participant MW as Middleware (RateLimiter + ApiKeyHmacHandler)
+    participant EP as ScoresEndpoints
+    participant H as SubmitScoreHandler
+    participant R as Repos / UnitOfWork
+    participant DB as PostgreSQL
+
+    GS-&gt;&gt;MW: POST /api/v1/games/{id}/scores&lt;br/&gt;X-Api-Key, X-Timestamp, X-Nonce, X-Signature
+    MW-&gt;&gt;DB: Buscar GameApiKey por keyId (activa, no revocada)
+    MW-&gt;&gt;MW: Descifrar secreto · recomputar HMAC · FixedTimeEquals · ventana ±300 s
+    MW--&gt;&gt;GS: 401 ProblemDetails (si falla)
+    MW-&gt;&gt;EP: ClaimsPrincipal(gameId, apiKeyId)
+    EP-&gt;&gt;H: SubmitScoreCommand(gameId, playerId, value, nonce)
+    H-&gt;&gt;H: Validar (FluentValidation) + reglas de dominio (rango, juego activo)
+    H-&gt;&gt;R: BEGIN · INSERT score (UNIQUE apiKeyId+nonce)
+    R-&gt;&gt;DB: INSERT … ON CONFLICT (game_id, player_id) DO UPDATE … WHERE es mejor
+    H-&gt;&gt;R: COMMIT
+    H-&gt;&gt;DB: SELECT rank (COUNT sobre índice)
+    H--&gt;&gt;EP: Result&lt;SubmitScoreResponse&gt;
+    EP--&gt;&gt;GS: 201 Created { scoreId, isPersonalBest, bestScore, rank }
+</pre>
+<hr />
+<h2 id="3-modelo-de-datos">3. Modelo de datos<a class="headerlink" href="#3-modelo-de-datos" title="Enlace a esta sección">#</a></h2>
+<h3 id="31-diagrama-entidad-relacion">3.1 Diagrama Entidad-Relación<a class="headerlink" href="#31-diagrama-entidad-relacion" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">erDiagram
+    PLAYER ||--o{ GAME : &quot;posee&quot;
+    PLAYER ||--o{ REFRESH_TOKEN : &quot;tiene&quot;
+    PLAYER ||--o{ SCORE : &quot;obtiene&quot;
+    PLAYER ||--o{ LEADERBOARD_ENTRY : &quot;figura en&quot;
+    GAME ||--o{ GAME_API_KEY : &quot;autoriza&quot;
+    GAME ||--o{ SCORE : &quot;recibe&quot;
+    GAME ||--o{ LEADERBOARD_ENTRY : &quot;clasifica&quot;
+    GAME_API_KEY ||--o{ SCORE : &quot;firma&quot;
+    SCORE ||--o| LEADERBOARD_ENTRY : &quot;es mejor marca de&quot;
+
+    PLAYER {
+        uuid id PK &quot;UUIDv7&quot;
+        citext username UK &quot;3-32&quot;
+        citext email UK
+        text password_hash &quot;PBKDF2&quot;
+        text role &quot;player | admin&quot;
+        timestamptz created_at
+    }
+    REFRESH_TOKEN {
+        uuid id PK
+        uuid player_id FK
+        bytea token_hash UK &quot;SHA-256&quot;
+        uuid family_id &quot;detección de reutilización&quot;
+        timestamptz expires_at
+        timestamptz revoked_at &quot;nullable&quot;
+        uuid replaced_by_id &quot;nullable&quot;
+    }
+    GAME {
+        uuid id PK
+        uuid owner_id FK
+        text slug UK
+        text name
+        text description
+        smallint score_order &quot;0 HigherIsBetter · 1 LowerIsBetter&quot;
+        bigint min_score &quot;nullable&quot;
+        bigint max_score &quot;nullable&quot;
+        boolean is_archived
+        timestamptz created_at
+        uint xmin &quot;concurrencia optimista&quot;
+    }
+    GAME_API_KEY {
+        uuid id PK
+        uuid game_id FK
+        text key_id UK &quot;lbk_ + 16 chars públicos&quot;
+        text name
+        bytea secret_ciphertext &quot;Data Protection&quot;
+        timestamptz created_at
+        timestamptz last_used_at &quot;nullable&quot;
+        timestamptz revoked_at &quot;nullable&quot;
+    }
+    SCORE {
+        uuid id PK &quot;UUIDv7&quot;
+        uuid game_id FK
+        uuid player_id FK
+        uuid api_key_id FK
+        bigint value
+        text nonce &quot;UK con api_key_id&quot;
+        jsonb metadata &quot;≤ 2 KB&quot;
+        smallint status &quot;Accepted · PendingReview · Rejected&quot;
+        timestamptz submitted_at
+    }
+    LEADERBOARD_ENTRY {
+        uuid game_id PK, FK
+        uuid player_id PK, FK
+        bigint best_score
+        bigint sort_key &quot;normalizado: siempre DESC&quot;
+        uuid score_id FK
+        timestamptz achieved_at
+        int submissions_count
+    }
+</pre>
+<h3 id="32-decisiones-clave-del-modelo">3.2 Decisiones clave del modelo<a class="headerlink" href="#32-decisiones-clave-del-modelo" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decisión</th>
+<th>Justificación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>SCORE</code> (histórico inmutable) separado de <code>LEADERBOARD_ENTRY</code> (proyección)</strong></td>
+<td>Ranking = 1 fila por jugador → consultas de posición O(log n + k) sin <code>GROUP BY</code> sobre millones de eventos. El histórico permite auditoría y recálculo (RF-33).</td>
+</tr>
+<tr>
+<td><strong><code>sort_key</code> normalizado</strong></td>
+<td><code>sort_key = value</code> si <code>HigherIsBetter</code>, <code>-value</code> si <code>LowerIsBetter</code>. Un único índice <code>(game_id, sort_key DESC, achieved_at ASC, player_id ASC)</code> sirve a ambos órdenes y al desempate.</td>
+</tr>
+<tr>
+<td><strong>UUIDv7 (<code>Guid.CreateVersion7()</code>)</strong></td>
+<td>Identificadores no enumerables (mitiga BOLA) y ordenables por tiempo (inserciones amigables con B-tree).</td>
+</tr>
+<tr>
+<td><strong><code>citext</code> para username/email</strong></td>
+<td>Unicidad insensible a mayúsculas sin <code>LOWER()</code> en cada consulta.</td>
+</tr>
+<tr>
+<td><strong><code>UNIQUE (api_key_id, nonce)</code> en <code>SCORE</code></strong></td>
+<td>Idempotencia y protección de <em>replay</em> garantizadas por la BD, no por memoria.</td>
+</tr>
+<tr>
+<td><strong>Secreto de API Key cifrado (no hasheado)</strong></td>
+<td>HMAC requiere que el servidor conozca el secreto para recomputar la firma. Se cifra con ASP.NET Core Data Protection; el <em>key ring</em> vive fuera de la BD (volumen / en producción, Key Vault). Ver ADR-003.</td>
+</tr>
+<tr>
+<td><strong><code>xmin</code> como token de concurrencia en <code>GAME</code></strong></td>
+<td>Concurrencia optimista nativa de PostgreSQL con Npgsql, sin columna extra.</td>
+</tr>
+<tr>
+<td><strong>Soft delete de <code>GAME</code> (<code>is_archived</code>)</strong></td>
+<td>Preserva rankings históricos y la integridad referencial de scores.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="33-indices">3.3 Índices<a class="headerlink" href="#33-indices" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Índice</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>leaderboard_entries</code></td>
+<td>PK <code>(game_id, player_id)</code></td>
+<td>Upsert de mejor marca, lookup de un jugador.</td>
+</tr>
+<tr>
+<td><code>leaderboard_entries</code></td>
+<td><code>ix_lb_rank (game_id, sort_key DESC, achieved_at ASC, player_id ASC)</code></td>
+<td>Top N, paginación, cálculo de rango, ventana relativa.</td>
+</tr>
+<tr>
+<td><code>scores</code></td>
+<td><code>ux_scores_nonce (api_key_id, nonce)</code> UNIQUE</td>
+<td>Idempotencia / anti-replay.</td>
+</tr>
+<tr>
+<td><code>scores</code></td>
+<td><code>ix_scores_player_game (player_id, game_id, submitted_at DESC)</code></td>
+<td>Historial de un jugador.</td>
+</tr>
+<tr>
+<td><code>game_api_keys</code></td>
+<td><code>ux_api_keys_key_id (key_id)</code> UNIQUE</td>
+<td>Autenticación de servidor.</td>
+</tr>
+<tr>
+<td><code>refresh_tokens</code></td>
+<td><code>ux_refresh_token_hash (token_hash)</code> UNIQUE</td>
+<td>Refresh.</td>
+</tr>
+<tr>
+<td><code>players</code></td>
+<td><code>ux_players_email</code>, <code>ux_players_username</code> UNIQUE</td>
+<td>Registro / login.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="34-consultas-criticas-referencia-de-implementacion">3.4 Consultas críticas (referencia de implementación)<a class="headerlink" href="#34-consultas-criticas-referencia-de-implementacion" title="Enlace a esta sección">#</a></h3>
+<p><strong>Upsert de mejor marca</strong> (dentro de la transacción del envío; atómico frente a concurrencia):</p>
+<pre><code class="language-sql">INSERT INTO leaderboard_entries (game_id, player_id, best_score, sort_key, score_id, achieved_at, submissions_count)
+VALUES (@gameId, @playerId, @value, @sortKey, @scoreId, @now, 1)
+ON CONFLICT (game_id, player_id) DO UPDATE
+SET submissions_count = leaderboard_entries.submissions_count + 1,
+    best_score  = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.best_score  ELSE leaderboard_entries.best_score  END,
+    sort_key    = GREATEST(EXCLUDED.sort_key, leaderboard_entries.sort_key),
+    score_id    = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.score_id    ELSE leaderboard_entries.score_id    END,
+    achieved_at = CASE WHEN EXCLUDED.sort_key &gt; leaderboard_entries.sort_key THEN EXCLUDED.achieved_at ELSE leaderboard_entries.achieved_at END
+RETURNING best_score, (xmax = 0) AS inserted, score_id = @scoreId AS is_personal_best;
+</code></pre>
+<p><strong>Rango absoluto</strong> (1 + número de entradas estrictamente mejores, con desempate):</p>
+<pre><code class="language-sql">SELECT COUNT(*) + 1
+FROM leaderboard_entries
+WHERE game_id = @gameId
+  AND (sort_key &gt; @sortKey
+       OR (sort_key = @sortKey AND achieved_at &lt; @achievedAt)
+       OR (sort_key = @sortKey AND achieved_at = @achievedAt AND player_id &lt; @playerId));
+</code></pre>
+<p><strong>Ventana relativa</strong> (<code>k</code> por encima y <code>k</code> por debajo): dos consultas <em>keyset</em> sobre <code>ix_lb_rank</code> (<code>ORDER BY … LIMIT k</code> hacia arriba y hacia abajo) unidas en memoria, con rangos derivados del rango absoluto. Evita <code>ROW_NUMBER()</code> sobre toda la tabla.</p>
+<blockquote>
+<p><strong>Límite conocido:</strong> <code>COUNT(*)</code> es O(rango) sobre el índice. Para ≤ 1 M de entradas por juego cumple RNF-01. Por encima, la alternativa documentada es Redis Sorted Sets (ADR de mejoras futuras).</p>
+</blockquote>
+<hr />
+<h2 id="4-diseno-de-endpoints-restful">4. Diseño de Endpoints RESTful<a class="headerlink" href="#4-diseno-de-endpoints-restful" title="Enlace a esta sección">#</a></h2>
+<p><strong>Convenciones:</strong> base <code>/api/v1</code> · JSON <code>camelCase</code> · fechas ISO-8601 UTC · IDs UUID · rutas en plural y <code>kebab-case</code> · colecciones paginadas · errores <code>application/problem+json</code>.</p>
+<h3 id="41-catalogo">4.1 Catálogo<a class="headerlink" href="#41-catalogo" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Método</th>
+<th>Ruta</th>
+<th>Auth</th>
+<th>Descripción</th>
+<th>Éxito</th>
+<th>Errores</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/register</code></td>
+<td>Anónimo · RL <code>auth</code></td>
+<td>Registrar jugador</td>
+<td><code>201</code></td>
+<td><code>400</code>, <code>409</code>, <code>429</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/login</code></td>
+<td>Anónimo · RL <code>auth</code></td>
+<td>Login → tokens</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>401</code>, <code>429</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/refresh</code></td>
+<td>Anónimo · RL <code>auth</code></td>
+<td>Rotar refresh token</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>401</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/auth/logout</code></td>
+<td>JWT</td>
+<td>Revocar refresh token</td>
+<td><code>204</code></td>
+<td><code>401</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/players/me</code></td>
+<td>JWT</td>
+<td>Perfil propio</td>
+<td><code>200</code></td>
+<td><code>401</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/players/me/scores?gameId=&amp;page=&amp;pageSize=</code></td>
+<td>JWT</td>
+<td>Historial propio</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>401</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/games</code></td>
+<td>JWT</td>
+<td>Crear juego</td>
+<td><code>201</code></td>
+<td><code>400</code>, <code>401</code>, <code>409</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games?page=&amp;pageSize=&amp;search=</code></td>
+<td>Anónimo</td>
+<td>Listar juegos activos</td>
+<td><code>200</code></td>
+<td><code>400</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}</code></td>
+<td>Anónimo</td>
+<td>Detalle de juego</td>
+<td><code>200</code></td>
+<td><code>404</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>PATCH</code></td>
+<td><code>/api/v1/games/{gameId}</code></td>
+<td>JWT · Owner</td>
+<td>Actualizar metadatos</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>401</code>, <code>404</code>, <code>409</code>, <code>412</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/games/{gameId}</code></td>
+<td>JWT · Owner</td>
+<td>Archivar (soft delete)</td>
+<td><code>204</code></td>
+<td><code>401</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/games/{gameId}/api-keys</code></td>
+<td>JWT · Owner</td>
+<td>Emitir API Key</td>
+<td><code>201</code></td>
+<td><code>401</code>, <code>404</code>, <code>409</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/api-keys</code></td>
+<td>JWT · Owner</td>
+<td>Listar claves (sin secreto)</td>
+<td><code>200</code></td>
+<td><code>401</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/games/{gameId}/api-keys/{apiKeyId}</code></td>
+<td>JWT · Owner</td>
+<td>Revocar clave</td>
+<td><code>204</code></td>
+<td><code>401</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/games/{gameId}/scores</code></td>
+<td>ApiKey+HMAC · RL <code>score-submit</code></td>
+<td>Enviar score</td>
+<td><code>201</code> / <code>200</code>¹</td>
+<td><code>400</code>, <code>401</code>, <code>403</code>, <code>409</code>, <code>422</code>, <code>429</code></td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/leaderboard?page=&amp;pageSize=</code></td>
+<td>Anónimo · RL <code>public-read</code></td>
+<td>Ranking paginado</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/leaderboard/top?n=10</code></td>
+<td>Anónimo · RL <code>public-read</code></td>
+<td>Top N</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/leaderboard/players/{playerId}</code></td>
+<td>Anónimo · RL <code>public-read</code></td>
+<td>Posición absoluta</td>
+<td><code>200</code></td>
+<td><code>404</code></td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/leaderboard/players/{playerId}/around?range=5</code></td>
+<td>Anónimo · RL <code>public-read</code></td>
+<td>Posición relativa</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/games/{gameId}/leaderboard/me</code></td>
+<td>JWT</td>
+<td>Mi posición</td>
+<td><code>200</code></td>
+<td><code>401</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>DELETE</code></td>
+<td><code>/api/v1/admin/scores/{scoreId}</code></td>
+<td>JWT · rol <code>admin</code></td>
+<td>Invalidar score (RF-33)</td>
+<td><code>204</code></td>
+<td><code>401</code>, <code>403</code>, <code>404</code></td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>GET</code></td>
+<td><code>/health/live</code> · <code>/health/ready</code></td>
+<td>Anónimo</td>
+<td>Health checks</td>
+<td><code>200</code></td>
+<td><code>503</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>¹ <code>200 OK</code> cuando la petición es un reintento idempotente (mismo <code>nonce</code>) y se devuelve el resultado original.</p>
+<h3 id="42-payloads-principales">4.2 Payloads principales<a class="headerlink" href="#42-payloads-principales" title="Enlace a esta sección">#</a></h3>
+<p><strong><code>POST /api/v1/auth/register</code></strong></p>
+<pre><code class="language-json">// Request
+{ &quot;username&quot;: &quot;ana_dev&quot;, &quot;email&quot;: &quot;ana@example.com&quot;, &quot;password&quot;: &quot;Sup3rSecret!&quot; }
+// 201 Created · Location: /api/v1/players/0192f0c1-…
+{ &quot;id&quot;: &quot;0192f0c1-7a2b-7cc3-9d10-5b1e2f3a4b5c&quot;, &quot;username&quot;: &quot;ana_dev&quot;, &quot;createdAt&quot;: &quot;2026-11-04T10:15:00Z&quot; }
+</code></pre>
+<p><strong><code>POST /api/v1/auth/login</code></strong></p>
+<pre><code class="language-json">// Request
+{ &quot;email&quot;: &quot;ana@example.com&quot;, &quot;password&quot;: &quot;Sup3rSecret!&quot; }
+// 200 OK
+{ &quot;accessToken&quot;: &quot;eyJhbGciOiJIUzI1NiIs…&quot;, &quot;tokenType&quot;: &quot;Bearer&quot;, &quot;expiresIn&quot;: 900,
+  &quot;refreshToken&quot;: &quot;r1_9QpF…&quot;, &quot;refreshTokenExpiresAt&quot;: &quot;2026-11-11T10:15:00Z&quot; }
+</code></pre>
+<p><strong><code>POST /api/v1/games</code></strong></p>
+<pre><code class="language-json">// Request
+{ &quot;name&quot;: &quot;Space Blaster&quot;, &quot;slug&quot;: &quot;space-blaster&quot;, &quot;description&quot;: &quot;Arcade shooter&quot;,
+  &quot;scoreOrder&quot;: &quot;HigherIsBetter&quot;, &quot;minScore&quot;: 0, &quot;maxScore&quot;: 1000000 }
+// 201 Created · Location: /api/v1/games/{gameId}
+{ &quot;id&quot;: &quot;…&quot;, &quot;slug&quot;: &quot;space-blaster&quot;, &quot;name&quot;: &quot;Space Blaster&quot;, &quot;scoreOrder&quot;: &quot;HigherIsBetter&quot;,
+  &quot;minScore&quot;: 0, &quot;maxScore&quot;: 1000000, &quot;isArchived&quot;: false, &quot;createdAt&quot;: &quot;…&quot; }
+</code></pre>
+<p><strong><code>POST /api/v1/games/{gameId}/api-keys</code></strong></p>
+<pre><code class="language-json">// Request
+{ &quot;name&quot;: &quot;prod-server&quot; }
+// 201 Created — el secreto NO se vuelve a mostrar
+{ &quot;id&quot;: &quot;…&quot;, &quot;keyId&quot;: &quot;lbk_7f3a9c2e1b4d8f60&quot;, &quot;name&quot;: &quot;prod-server&quot;,
+  &quot;secret&quot;: &quot;lbs_Zk3…(43 chars base64url, 256 bits)&quot;, &quot;createdAt&quot;: &quot;…&quot; }
+</code></pre>
+<p><strong><code>POST /api/v1/games/{gameId}/scores</code></strong> (servidor de juego)</p>
+<pre><code class="language-http">POST /api/v1/games/0192f0c1-…/scores HTTP/1.1
+Content-Type: application/json
+X-Api-Key: lbk_7f3a9c2e1b4d8f60
+X-Timestamp: 1730715300
+X-Nonce: b1946ac92492d2347c6235b4d2611184
+X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
+
+{ &quot;playerId&quot;: &quot;0192f0c1-…&quot;, &quot;value&quot;: 7200, &quot;metadata&quot;: { &quot;level&quot;: 12, &quot;durationMs&quot;: 184000 } }
+</code></pre>
+<pre><code class="language-json">// 201 Created · Location: /api/v1/scores/{scoreId}
+{ &quot;scoreId&quot;: &quot;…&quot;, &quot;value&quot;: 7200, &quot;isPersonalBest&quot;: true, &quot;bestScore&quot;: 7200,
+  &quot;rank&quot;: 42, &quot;totalPlayers&quot;: 1000, &quot;status&quot;: &quot;Accepted&quot; }
+</code></pre>
+<p><strong><code>GET /api/v1/games/{gameId}/leaderboard?page=2&amp;pageSize=20</code></strong></p>
+<pre><code class="language-json">{ &quot;items&quot;: [ { &quot;rank&quot;: 21, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;carla&quot;, &quot;score&quot;: 1200, &quot;achievedAt&quot;: &quot;…&quot; } ],
+  &quot;page&quot;: 2, &quot;pageSize&quot;: 20, &quot;totalCount&quot;: 1000, &quot;totalPages&quot;: 50,
+  &quot;hasPreviousPage&quot;: true, &quot;hasNextPage&quot;: true }
+</code></pre>
+<p><strong><code>GET /api/v1/games/{gameId}/leaderboard/players/{playerId}</code></strong></p>
+<pre><code class="language-json">{ &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;ana_dev&quot;, &quot;rank&quot;: 42, &quot;score&quot;: 7200,
+  &quot;achievedAt&quot;: &quot;…&quot;, &quot;totalPlayers&quot;: 1000, &quot;percentile&quot;: 95.9 }
+</code></pre>
+<p><strong><code>GET …/leaderboard/players/{playerId}/around?range=2</code></strong></p>
+<pre><code class="language-json">{ &quot;target&quot;: { &quot;rank&quot;: 42, &quot;playerId&quot;: &quot;…&quot; },
+  &quot;entries&quot;: [
+    { &quot;rank&quot;: 40, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;eva&quot;,     &quot;score&quot;: 7350, &quot;isTarget&quot;: false },
+    { &quot;rank&quot;: 41, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;fer&quot;,     &quot;score&quot;: 7300, &quot;isTarget&quot;: false },
+    { &quot;rank&quot;: 42, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;ana_dev&quot;, &quot;score&quot;: 7200, &quot;isTarget&quot;: true  },
+    { &quot;rank&quot;: 43, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;gus&quot;,     &quot;score&quot;: 7100, &quot;isTarget&quot;: false },
+    { &quot;rank&quot;: 44, &quot;playerId&quot;: &quot;…&quot;, &quot;username&quot;: &quot;hana&quot;,    &quot;score&quot;: 7050, &quot;isTarget&quot;: false } ] }
+</code></pre>
+<h3 id="43-errores-estandarizados-rfc-9457-problemdetails">4.3 Errores estandarizados (RFC 9457 ProblemDetails)<a class="headerlink" href="#43-errores-estandarizados-rfc-9457-problemdetails" title="Enlace a esta sección">#</a></h3>
+<p>Todas las respuestas de error usan <code>Content-Type: application/problem+json</code>:</p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;https://httpstatuses.io/422&quot;,
+  &quot;title&quot;: &quot;Score out of range&quot;,
+  &quot;status&quot;: 422,
+  &quot;detail&quot;: &quot;Score 2000000 exceeds the maximum of 1000000 configured for game 'space-blaster'.&quot;,
+  &quot;instance&quot;: &quot;/api/v1/games/0192f0c1-…/scores&quot;,
+  &quot;code&quot;: &quot;score.out_of_range&quot;,
+  &quot;traceId&quot;: &quot;00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01&quot;
+}
+</code></pre>
+<p>Validación (<code>400</code>) añade <code>errors</code>:</p>
+<pre><code class="language-json">{ &quot;type&quot;: &quot;https://httpstatuses.io/400&quot;, &quot;title&quot;: &quot;One or more validation errors occurred.&quot;, &quot;status&quot;: 400,
+  &quot;code&quot;: &quot;validation.failed&quot;, &quot;traceId&quot;: &quot;…&quot;,
+  &quot;errors&quot;: { &quot;password&quot;: [&quot;Password must be at least 10 characters long.&quot;] } }
+</code></pre>
+<p><strong>Catálogo de códigos de error</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>HTTP</th>
+<th><code>code</code></th>
+<th>Origen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td><code>validation.failed</code></td>
+<td>FluentValidation</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>auth.invalid_credentials</code></td>
+<td>Login</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>auth.invalid_refresh_token</code></td>
+<td>Refresh (incluye reutilización detectada)</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>apikey.missing</code> · <code>apikey.invalid</code> · <code>apikey.revoked</code></td>
+<td>Handler ApiKey</td>
+</tr>
+<tr>
+<td>401</td>
+<td><code>apikey.invalid_signature</code> · <code>apikey.stale_request</code></td>
+<td>Handler HMAC</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>apikey.game_mismatch</code></td>
+<td>La clave pertenece a otro juego</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>auth.forbidden</code></td>
+<td>Rol insuficiente (admin)</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>game.not_found</code> · <code>player.not_found</code> · <code>leaderboard.entry_not_found</code> · <code>apikey.not_found</code></td>
+<td>Handlers (también para recursos ajenos)</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>player.email_taken</code> · <code>player.username_taken</code> · <code>game.slug_taken</code> · <code>apikey.limit_reached</code></td>
+<td>Unicidad / límites</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>game.archived</code></td>
+<td>Envío a juego archivado</td>
+</tr>
+<tr>
+<td>412</td>
+<td><code>concurrency.conflict</code></td>
+<td><code>If-Match</code> / <code>xmin</code> desactualizado</td>
+</tr>
+<tr>
+<td>422</td>
+<td><code>score.out_of_range</code> · <code>player.not_found_for_score</code></td>
+<td>Reglas de dominio</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>rate_limit.exceeded</code></td>
+<td>RateLimiter (+ <code>Retry-After</code>)</td>
+</tr>
+<tr>
+<td>500</td>
+<td><code>server.unexpected</code></td>
+<td><code>GlobalExceptionHandler</code> (sin detalles fuera de Development)</td>
+</tr>
+<tr>
+<td>503</td>
+<td>—</td>
+<td>Health check <em>ready</em></td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="44-paginacion">4.4 Paginación<a class="headerlink" href="#44-paginacion" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li><strong>Offset</strong> (<code>page</code> ≥ 1, <code>pageSize</code> 1–100, por defecto 20) para listados y ranking: sencillo de consumir y el ranking necesita «ir a la página X».</li>
+<li>Respuesta con sobre <code>PagedResult&lt;T&gt;</code>; <code>totalCount</code> se calcula con <code>COUNT(*)</code> sobre el índice (aceptable a esta escala).</li>
+<li><strong>Evolución:</strong> <em>keyset pagination</em> (<code>cursor</code> opaco) para el historial de scores si crece; documentado como mejora futura.</li>
+</ul>
+<hr />
+<h2 id="5-estrategia-de-seguridad">5. Estrategia de Seguridad<a class="headerlink" href="#5-estrategia-de-seguridad" title="Enlace a esta sección">#</a></h2>
+<h3 id="51-dos-esquemas-de-autenticacion">5.1 Dos esquemas de autenticación<a class="headerlink" href="#51-dos-esquemas-de-autenticacion" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Personas (Jugador / Propietario / Admin)</th>
+<th>Máquinas (Servidor de juego)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Esquema</td>
+<td><code>Bearer</code> (JWT)</td>
+<td><code>ApiKeyHmac</code> (handler propio <code>AuthenticationHandler&lt;T&gt;</code>)</td>
+</tr>
+<tr>
+<td>Credencial</td>
+<td>email + password → access + refresh token</td>
+<td><code>keyId</code> público + secreto de 256 bits</td>
+</tr>
+<tr>
+<td>Transporte</td>
+<td><code>Authorization: Bearer …</code></td>
+<td><code>X-Api-Key</code>, <code>X-Timestamp</code>, <code>X-Nonce</code>, <code>X-Signature</code> — el secreto <strong>nunca</strong> viaja</td>
+</tr>
+<tr>
+<td>Vida</td>
+<td>Access 15 min · Refresh 7 días rotatorio</td>
+<td>Hasta revocación (rotación recomendada 90 días)</td>
+</tr>
+<tr>
+<td>Claims</td>
+<td><code>sub</code>, <code>unique_name</code>, <code>role</code>, <code>jti</code></td>
+<td><code>game_id</code>, <code>api_key_id</code>, <code>auth_type=game_server</code></td>
+</tr>
+<tr>
+<td>Endpoints</td>
+<td>Todo salvo <code>scores</code> POST</td>
+<td>Solo <code>POST /games/{id}/scores</code></td>
+</tr>
+<tr>
+<td>Autorización</td>
+<td>Políticas: <code>Authenticated</code>, <code>GameOwner</code> (por recurso), <code>Admin</code></td>
+<td>Política <code>GameServer</code> + comprobación <code>game_id</code> claim == ruta</td>
+</tr>
+</tbody>
+</table></div>
+<p>La separación se hace con <strong>esquemas nombrados</strong> y políticas explícitas: un JWT no puede enviar scores y una API Key no puede gestionar juegos.</p>
+<h3 id="52-flujo-jwt-jugadores">5.2 Flujo JWT (jugadores)<a class="headerlink" href="#52-flujo-jwt-jugadores" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    actor U as Jugador
+    participant API as Leaderboard API
+    participant DB as PostgreSQL
+
+    U-&gt;&gt;API: POST /auth/login {email, password}
+    API-&gt;&gt;DB: SELECT player WHERE email = …
+    API-&gt;&gt;API: PasswordHasher.VerifyHashedPassword (PBKDF2, tiempo constante)
+    API-&gt;&gt;DB: INSERT refresh_token (SHA-256(token), family_id, exp +7d)
+    API--&gt;&gt;U: 200 {accessToken (15 min, HS256), refreshToken}
+
+    U-&gt;&gt;API: GET /leaderboard/me · Authorization: Bearer …
+    API-&gt;&gt;API: JwtBearer valida firma, iss, aud, exp (ClockSkew 30 s)
+    API--&gt;&gt;U: 200
+
+    U-&gt;&gt;API: POST /auth/refresh {refreshToken}
+    API-&gt;&gt;DB: Buscar por hash · ¿revocado?
+    alt Token válido
+        API-&gt;&gt;DB: Revocar actual · INSERT nuevo (misma family_id)
+        API--&gt;&gt;U: 200 {nuevo accessToken, nuevo refreshToken}
+    else Token ya rotado (reutilización)
+        API-&gt;&gt;DB: Revocar TODA la familia
+        API--&gt;&gt;U: 401 auth.invalid_refresh_token
+    end
+</pre>
+<p><strong>Parámetros JWT:</strong> <code>iss = leaderboard-api</code>, <code>aud = leaderboard-api-clients</code>, firma HS256 con clave ≥ 256 bits desde configuración (<code>Jwt__SigningKey</code> vía variable de entorno / <em>user-secrets</em>; nunca en <code>appsettings.json</code>). Evolución documentada: RS256 + JWKS si aparecen consumidores externos.</p>
+<h3 id="53-flujo-api-key-hmac-servidores-de-juego">5.3 Flujo API Key + HMAC (servidores de juego)<a class="headerlink" href="#53-flujo-api-key-hmac-servidores-de-juego" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    participant GS as Servidor de juego
+    participant H as ApiKeyHmacAuthenticationHandler
+    participant DB as PostgreSQL
+
+    GS-&gt;&gt;GS: body = JSON · ts = unix now · nonce = 128 bits aleatorios
+    GS-&gt;&gt;GS: canonical = &quot;POST\n/api/v1/games/{id}/scores\n{ts}\n{nonce}\n{hex(SHA256(body))}&quot;
+    GS-&gt;&gt;GS: signature = Base64(HMAC-SHA256(secret, canonical))
+    GS-&gt;&gt;H: POST … con X-Api-Key, X-Timestamp, X-Nonce, X-Signature
+    H-&gt;&gt;H: ¿Cabeceras presentes? ¿|now − ts| ≤ 300 s?
+    H-&gt;&gt;DB: SELECT game_api_keys WHERE key_id = … AND revoked_at IS NULL
+    H-&gt;&gt;H: secret = DataProtector.Unprotect(secret_ciphertext)
+    H-&gt;&gt;H: CryptographicOperations.FixedTimeEquals(expected, provided)
+    H--&gt;&gt;GS: 401 si algo falla (code específico, log de seguridad)
+    Note over H,DB: El nonce se consume al insertar el score:&lt;br/&gt;UNIQUE(api_key_id, nonce) ⇒ replay = respuesta idempotente
+</pre>
+<p><strong>Por qué HMAC y no solo una API Key en cabecera:</strong> una clave en claro interceptada (logs de proxy, herramientas de depuración) permite enviar scores arbitrarios indefinidamente. Con HMAC, capturar una petición solo permite <strong>reenviarla</strong> dentro de la ventana, y el nonce lo neutraliza. Además se garantiza <strong>integridad del cuerpo</strong> (no se puede cambiar <code>value</code>). Evaluado en <strong>ADR-003</strong>.</p>
+<blockquote>
+<p><strong>Fase de noviembre:</strong> la API Key se envía como <code>X-Api-Key: {keyId}.{secret}</code> y se compara en tiempo constante (mismo almacenamiento cifrado). En enero se activa HMAC; el modo simple queda deshabilitado por configuración (<code>ApiKeys:AllowPlainSecret=false</code>).</p>
+</blockquote>
+<h3 id="54-defensa-en-profundidad-contra-puntuaciones-tramposas">5.4 Defensa en profundidad contra puntuaciones tramposas<a class="headerlink" href="#54-defensa-en-profundidad-contra-puntuaciones-tramposas" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capa</th>
+<th>Control</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canal</td>
+<td>HTTPS + HMAC (integridad) + timestamp (frescura) + nonce (unicidad)</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td>Credencial</td>
+<td>Claves por juego, múltiples activas, revocables, <code>last_used_at</code> para auditoría</td>
+<td>Nov/Ene</td>
+</tr>
+<tr>
+<td>Frecuencia</td>
+<td><code>RateLimiter</code> <em>token bucket</em> por API Key (60/min, ráfaga 20) y ventana por jugador (10/min por juego)</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td>Plausibilidad</td>
+<td><code>min/max score</code> por juego (Nov); heurística de salto anómalo → <code>PendingReview</code> (Mar, <em>Could</em>)</td>
+<td>Nov/Mar</td>
+</tr>
+<tr>
+<td>Moderación</td>
+<td>Admin invalida scores; recálculo del <em>leaderboard entry</em> desde el histórico</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td>Auditoría</td>
+<td>Log estructurado de rechazos (<code>SecurityEvent=ScoreRejected</code>, <code>Reason</code>, <code>ApiKeyId</code>)</td>
+<td>Mar</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="55-controles-owasp-api-top-10-2023">5.5 Controles OWASP API Top 10 (2023)<a class="headerlink" href="#55-controles-owasp-api-top-10-2023" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Riesgo</th>
+<th>Mitigación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API1 BOLA</td>
+<td>Autorización por recurso (<code>GameOwner</code>), <code>404</code> para recursos ajenos, UUIDv7 no secuenciales.</td>
+</tr>
+<tr>
+<td>API2 Broken Authentication</td>
+<td>PBKDF2, rate limiting en <code>auth</code>, refresh rotation + detección de reutilización, mensajes genéricos.</td>
+</tr>
+<tr>
+<td>API3 BOPLA</td>
+<td>DTOs explícitos de entrada/salida (sin <em>mass assignment</em>), email nunca en rankings.</td>
+</tr>
+<tr>
+<td>API4 Unrestricted Resource Consumption</td>
+<td><code>pageSize ≤ 100</code>, <code>n ≤ 100</code>, <code>range ≤ 25</code>, <code>metadata ≤ 2 KB</code>, <code>MaxRequestBodySize</code> 16 KB, rate limiting.</td>
+</tr>
+<tr>
+<td>API5 BFLA</td>
+<td>Esquemas separados (JWT vs ApiKey), política <code>Admin</code>.</td>
+</tr>
+<tr>
+<td>API8 Security Misconfiguration</td>
+<td>Swagger solo en <code>Development</code>, sin stack traces en producción, cabeceras (<code>X-Content-Type-Options</code>, HSTS).</td>
+</tr>
+<tr>
+<td>API9 Improper Inventory</td>
+<td>Versionado <code>/api/v1</code>, OpenAPI como contrato.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="56-gestion-de-secretos">5.6 Gestión de secretos<a class="headerlink" href="#56-gestion-de-secretos" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Secreto</th>
+<th>Desarrollo</th>
+<th>Docker Compose</th>
+<th>Producción (futuro)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConnectionStrings__Postgres</code></td>
+<td>user-secrets</td>
+<td><code>.env</code> (no versionado; <code>.env.example</code> sí)</td>
+<td>Key Vault / secretos del orquestador</td>
+</tr>
+<tr>
+<td><code>Jwt__SigningKey</code></td>
+<td>user-secrets</td>
+<td><code>.env</code></td>
+<td>Key Vault</td>
+</tr>
+<tr>
+<td>Data Protection key ring</td>
+<td>Carpeta local</td>
+<td>Volumen <code>dp-keys</code></td>
+<td>Blob + Key Vault</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="6-aspectos-transversales">6. Aspectos transversales<a class="headerlink" href="#6-aspectos-transversales" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Diseño</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Logging</strong></td>
+<td>Serilog: <code>UseSerilogRequestLogging</code>, salida JSON compacta a stdout, enrichers <code>FromLogContext</code>, <code>Environment</code>, <code>TraceId/SpanId</code>. Nivel <code>Information</code> por defecto, <code>Warning</code> para <code>Microsoft.*</code>.</td>
+</tr>
+<tr>
+<td><strong>Health checks</strong></td>
+<td><code>/health/live</code> (proceso vivo, sin dependencias) · <code>/health/ready</code> (<code>AddDbContextCheck</code> / <code>AddNpgSql</code>). Respuesta JSON con estado por componente.</td>
+</tr>
+<tr>
+<td><strong>Rate limiting</strong></td>
+<td><code>Microsoft.AspNetCore.RateLimiting</code>: <code>auth</code> (fixed window 5/min/IP), <code>score-submit</code> (token bucket por <code>api_key_id</code>), <code>public-read</code> (sliding window 120/min/IP). <code>OnRejected</code> → ProblemDetails <code>429</code> + <code>Retry-After</code>.</td>
+</tr>
+<tr>
+<td><strong>Migraciones</strong></td>
+<td>EF Core Migrations; aplicadas automáticamente al arrancar solo si <code>Database:MigrateOnStartup=true</code> (Compose/Dev). En producción: <em>migration bundle</em> en paso previo.</td>
+</tr>
+<tr>
+<td><strong>Tiempo</strong></td>
+<td><code>TimeProvider</code> inyectado (testeable con <code>FakeTimeProvider</code>). Todo en UTC (<code>timestamptz</code>).</td>
+</tr>
+<tr>
+<td><strong>OpenAPI</strong></td>
+<td><code>Microsoft.AspNetCore.OpenApi</code> genera el documento; Swagger UI (<code>Swashbuckle.AspNetCore.SwaggerUI</code>) lo sirve en <code>/swagger</code>. Transformers añaden esquemas <code>Bearer</code> y <code>ApiKeyHmac</code>.</td>
+</tr>
+<tr>
+<td><strong>Contenedor</strong></td>
+<td>Dockerfile multi-stage (<code>sdk:10.0</code> → <code>aspnet:10.0-noble-chiseled</code>), usuario no root, puerto 8080. Compose: <code>api</code> + <code>postgres:18-alpine</code> con <code>healthcheck</code> y <code>depends_on: condition: service_healthy</code>.</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="61-despliegue-local-docker-compose">6.1 Despliegue local (Docker Compose)<a class="headerlink" href="#61-despliegue-local-docker-compose" title="Enlace a esta sección">#</a></h3>
+<pre class="mermaid">flowchart LR
+    Dev[&quot;💻 Desarrollador&lt;br/&gt;docker compose up&quot;] --&gt; C
+    subgraph C[&quot;compose.yaml&quot;]
+        A[&quot;api&lt;br/&gt;ASP.NET Core :8080&lt;br/&gt;ASPNETCORE_ENVIRONMENT=Development&quot;]
+        P[(&quot;postgres:18-alpine&lt;br/&gt;:5432&quot;)]
+        V1[[&quot;vol: pgdata&quot;]]
+        V2[[&quot;vol: dp-keys&quot;]]
+        A -- &quot;depends_on: service_healthy&quot; --&gt; P
+        P --- V1
+        A --- V2
+    end
+    Browser[&quot;🌐 http://localhost:8080/swagger&quot;] --&gt; A
+</pre>
+<hr />
+<h2 id="7-architecture-decision-records">7. Architecture Decision Records<a class="headerlink" href="#7-architecture-decision-records" title="Enlace a esta sección">#</a></h2>
+<p>Los ADR se escriben en <code>docs/adr/</code> con el formato <em>Contexto → Decisión → Alternativas → Consecuencias</em>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ADR</th>
+<th>Título</th>
+<th>Estado</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ADR-001</td>
+<td>PostgreSQL como almacén principal</td>
+<td>Propuesto (decisión tomada en este diseño)</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td>ADR-002</td>
+<td>Adopción de Clean Architecture</td>
+<td>Propuesto</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td>ADR-003</td>
+<td>Estrategia anti-cheat: HMAC + nonce + rate limiting + plausibilidad</td>
+<td>Propuesto</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td>ADR-004</td>
+<td>Mejoras futuras: Redis, tiempo real, microservicios, frontend</td>
+<td>Propuesto</td>
+<td>Mar</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="71-resumen-de-decisiones-tecnicas-ya-tomadas">7.1 Resumen de decisiones técnicas ya tomadas<a class="headerlink" href="#71-resumen-de-decisiones-tecnicas-ya-tomadas" title="Enlace a esta sección">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tema</th>
+<th>Elección</th>
+<th>Alternativa descartada</th>
+<th>Razón</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estilo de endpoints</td>
+<td>Minimal APIs agrupadas por feature</td>
+<td>Controllers</td>
+<td>Menos ceremonia, <code>TypedResults</code> mejora OpenAPI, rendimiento.</td>
+</tr>
+<tr>
+<td>Mediador</td>
+<td>Interfaces propias <code>ICommandHandler</code>/<code>IQueryHandler</code> + decoradores</td>
+<td>MediatR</td>
+<td>Licencia comercial desde v13; la indirección no aporta a esta escala.</td>
+</tr>
+<tr>
+<td>Mapeo</td>
+<td>Manual (métodos <code>ToResponse()</code>)</td>
+<td>AutoMapper</td>
+<td>Licencia comercial; el mapeo explícito es más legible y verificable en compilación.</td>
+</tr>
+<tr>
+<td>Validación</td>
+<td>FluentValidation</td>
+<td>Data Annotations</td>
+<td>Reglas complejas/condicionales, testeables de forma aislada, mensajes consistentes.</td>
+</tr>
+<tr>
+<td>Errores esperados</td>
+<td><code>Result&lt;T&gt;</code> + <code>Error(code, type)</code></td>
+<td>Excepciones para control de flujo</td>
+<td>Flujo explícito y barato; excepciones solo para lo inesperado.</td>
+</tr>
+<tr>
+<td>Tests de integración</td>
+<td>Testcontainers PostgreSQL</td>
+<td>EF InMemory / SQLite</td>
+<td><code>ON CONFLICT</code>, <code>citext</code>, <code>xmin</code> y SQL específico requieren PostgreSQL real.</td>
+</tr>
+<tr>
+<td>Aserciones</td>
+<td>Shouldly</td>
+<td>FluentAssertions</td>
+<td>Licencia comercial desde v8.</td>
+</tr>
+</tbody>
+</table></div>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="architecture.md"><code>docs/architecture.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

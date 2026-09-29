@@ -18,6 +18,6 @@
     <IsTestProject>true</IsTestProject>
     <OutputType>Exe</OutputType>
     <!-- Test naming (Method_Scenario_Result) and fixtures intentionally break some production rules. -->
-    <NoWarn>$(NoWarn);CA1707;CA1515;CA2007;CA1861;CA1001;CA1063;CA1816;CA2234</NoWarn>
+    <NoWarn>$(NoWarn);CA1707;CA1515;CA2007;CA1861;CA1001;CA1063;CA1816;CA2234;xUnit1051</NoWarn>
   </PropertyGroup>
 </Project>

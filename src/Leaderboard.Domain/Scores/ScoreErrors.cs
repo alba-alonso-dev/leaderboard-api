@@ -15,6 +15,9 @@ public static class ScoreErrors
     public static readonly Error PlayerRateLimited = new(
         "rate_limit.player_exceeded", "Too many scores submitted for this player in this game. Try again later.", ErrorType.TooManyRequests);
 
+    public static readonly Error NotPending = Error.Conflict(
+        "score.not_pending", "Only scores pending review can be approved.");
+
     public static readonly Error NonceReused = Error.Conflict(
         "score.nonce_reused", "The nonce was already used by this API key for a different score.");
 }

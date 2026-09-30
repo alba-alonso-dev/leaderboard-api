@@ -111,6 +111,30 @@ internal sealed class ScoreRepository(AppDbContext context) : IScoreRepository
     public Task<int> CountSinceAsync(Guid gameId, Guid playerId, DateTimeOffset since, CancellationToken cancellationToken) =>
         context.Scores.CountAsync(s => s.PlayerId == playerId && s.GameId == gameId && s.SubmittedAt >= since, cancellationToken);
 
+    public Task<long?> GetBestScoreAsync(Guid gameId, Guid playerId, CancellationToken cancellationToken) =>
+        context.LeaderboardEntries
+            .Where(e => e.GameId == gameId && e.PlayerId == playerId)
+            .Select(e => (long?)e.BestScore)
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<PagedResult<Score>> ListByStatusAsync(
+        ScoreStatus status, Guid? gameId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = context.Scores.AsNoTracking().Where(s => s.Status == status);
+        if (gameId is not null)
+        {
+            query = query.Where(s => s.GameId == gameId);
+        }
+
+        var total = await query.LongCountAsync(cancellationToken);
+        var items = await query
+            .OrderBy(s => s.SubmittedAt).ThenBy(s => s.Id) // oldest first: a moderation queue
+            .Skip(Paging.Offset(page, pageSize)).Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<Score>(items, page, pageSize, total);
+    }
+
     public async Task<PagedResult<Score>> ListByPlayerAsync(
         Guid playerId, Guid? gameId, int page, int pageSize, CancellationToken cancellationToken)
     {

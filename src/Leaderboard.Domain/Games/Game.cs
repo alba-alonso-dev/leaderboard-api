@@ -103,4 +103,21 @@ public sealed class Game
 
     /// <summary>Whether <paramref name="candidate"/> beats <paramref name="current"/> for this game.</summary>
     public bool IsBetter(long candidate, long current) => ToRankKey(candidate) < ToRankKey(current);
+
+    /// <summary>
+    /// Plausibility heuristic (RF-32): a new personal best that improves the previous one by more than
+    /// <paramref name="maxImprovementFactor"/> times is suspicious (e.g. 500 → 60 000 in an arcade game, or a speedrun
+    /// 20× faster). Only applies to positive values; a factor ≤ 1 disables the check.
+    /// </summary>
+    public bool IsSuspiciousImprovement(long candidate, long currentBest, double maxImprovementFactor)
+    {
+        if (maxImprovementFactor <= 1 || !IsBetter(candidate, currentBest) || candidate <= 0 || currentBest <= 0)
+        {
+            return false;
+        }
+
+        return ScoreOrder == ScoreOrder.HigherIsBetter
+            ? candidate > currentBest * maxImprovementFactor
+            : candidate * maxImprovementFactor < currentBest;
+    }
 }

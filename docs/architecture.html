@@ -682,7 +682,7 @@ WHERE game_id = @gameId
 <td><code>/api/v1/games/{gameId}/scores</code></td>
 <td>ApiKey+HMAC · RL <code>score-submit</code></td>
 <td>Enviar score</td>
-<td><code>201</code> / <code>200</code>¹</td>
+<td><code>201</code> / <code>202</code> / <code>200</code>¹</td>
 <td><code>400</code>, <code>401</code>, <code>403</code>, <code>409</code>, <code>422</code>, <code>429</code></td>
 </tr>
 <tr>
@@ -735,7 +735,7 @@ WHERE game_id = @gameId
 <td><code>DELETE</code></td>
 <td><code>/api/v1/admin/scores/{scoreId}</code></td>
 <td>JWT · rol <code>admin</code></td>
-<td>Invalidar score (RF-33)</td>
+<td>Invalidar score y recalcular la mejor marca (RF-33)</td>
 <td><code>204</code></td>
 <td><code>401</code>, <code>403</code>, <code>404</code></td>
 </tr>
@@ -757,9 +757,27 @@ WHERE game_id = @gameId
 <td><code>200</code></td>
 <td><code>404</code></td>
 </tr>
+<tr>
+<td>24</td>
+<td><code>GET</code></td>
+<td><code>/api/v1/admin/scores?status=PendingReview&amp;gameId=&amp;page=&amp;pageSize=</code></td>
+<td>JWT · rol <code>admin</code></td>
+<td>Cola de moderación, más antiguos primero (RF-32)</td>
+<td><code>200</code></td>
+<td><code>400</code>, <code>401</code>, <code>403</code></td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>POST</code></td>
+<td><code>/api/v1/admin/scores/{scoreId}/approve</code></td>
+<td>JWT · rol <code>admin</code></td>
+<td>Aprobar un score retenido: entra en el ranking (RF-32)</td>
+<td><code>204</code></td>
+<td><code>401</code>, <code>403</code>, <code>404</code>, <code>409</code></td>
+</tr>
 </tbody>
 </table></div>
-<p>¹ <code>200 OK</code> cuando la petición es un reintento idempotente (mismo <code>nonce</code>) y se devuelve el resultado original.</p>
+<p>¹ <code>200 OK</code> cuando la petición es un reintento idempotente (mismo <code>nonce</code>) y se devuelve el resultado original; <code>202 Accepted</code> cuando el score queda retenido para revisión (<code>status: "PendingReview"</code>).</p>
 <h3 id="42-payloads-principales">4.2 Payloads principales<a class="headerlink" href="#42-payloads-principales" title="Enlace a esta sección">#</a></h3>
 <p><strong><code>POST /api/v1/auth/register</code></strong></p>
 <pre><code class="language-json">// Request
@@ -917,6 +935,11 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <td>409</td>
 <td><code>score.nonce_reused</code></td>
 <td>Mismo nonce con un cuerpo distinto</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>score.not_pending</code></td>
+<td>Aprobar un score que no está en revisión</td>
 </tr>
 <tr>
 <td>412</td>
@@ -1083,7 +1106,7 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 </tr>
 <tr>
 <td>Plausibilidad</td>
-<td><code>min/max score</code> por juego (Nov); heurística de salto anómalo → <code>PendingReview</code> (Mar, <em>Could</em>)</td>
+<td><code>min/max score</code> por juego → <code>422</code>; un nuevo récord más de 10× mejor que el anterior (<code>Scores:MaxImprovementFactor</code>) se guarda como <code>PendingReview</code> (<code>202</code>), no entra en el ranking y espera a un administrador</td>
 <td>Nov/Mar</td>
 </tr>
 <tr>

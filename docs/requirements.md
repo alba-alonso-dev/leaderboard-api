@@ -3,7 +3,7 @@
 > **Documento:** `docs/requirements.md` · **Estado:** Implementado en v1.0 · **Versión:** 1.1  
 > **Relacionados:** [Arquitectura](architecture.md) · [Roadmap y tareas](roadmap-and-tasks.md) · [Estándares de código](coding-standards.md)
 
-> **Estado de implementación (v1.0):** todos los requerimientos *Must* y *Should* están implementados y cubiertos por tests. De los *Could*, RF-33 (moderación) está implementado; **RF-32 (heurística de plausibilidad → `PendingReview`) queda pendiente** y se describe en [ADR-004](adr/0004-future-improvements.md). RNF-01 se verificó con k6 ([performance.md](performance.md)).
+> **Estado de implementación (v1.0):** todos los requerimientos *Must*, *Should* y *Could* están implementados y cubiertos por tests, incluidos RF-32 (puntuaciones con una mejora > 10× quedan en `PendingReview` hasta que un administrador las aprueba) y RF-33 (moderación). RNF-01 se verificó con k6 ([performance.md](performance.md)).
 
 ## 1. Contexto y objetivo
 

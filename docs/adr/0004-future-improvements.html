@@ -204,9 +204,9 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 </tr>
 <tr>
 <td><strong>Detección estadística de trampas</strong></td>
-<td>Moderación manual insuficiente.</td>
-<td><code>ScoreStatus.PendingReview</code> ya existe y no entra en el ranking.</td>
-<td>Puntuación &gt; p99,9 del juego o salto &gt; X veces el récord personal → <code>PendingReview</code>; cola de revisión para administradores.</td>
+<td>La heurística de salto relativo (RF-32, ya implementada) genera demasiados falsos positivos o negativos.</td>
+<td>Cola <code>PendingReview</code> y endpoints de moderación ya existentes.</td>
+<td>Umbral por juego calculado sobre la distribución (p. ej. &gt; p99,9 o z-score), ajustable desde la configuración del juego.</td>
 </tr>
 <tr>
 <td><strong>Observabilidad avanzada</strong></td>

@@ -17,6 +17,13 @@ public sealed class ScoreSubmissionOptions
     /// <summary>Accepted scores per player and game per minute. 0 disables the check.</summary>
     [Range(0, 10_000)]
     public int MaxPerPlayerPerMinute { get; set; } = 10;
+
+    /// <summary>
+    /// A new personal best more than this many times better than the previous one is held for review (RF-32).
+    /// Values ≤ 1 disable the check.
+    /// </summary>
+    [Range(0, 1_000_000)]
+    public double MaxImprovementFactor { get; set; } = 10;
 }
 
 public sealed class ApiKeyOptions

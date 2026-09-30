@@ -24,6 +24,35 @@ public sealed class ScoreTests
             new string('x', Score.MetadataMaxLength + 1), Now));
 
     [Fact]
+    public void HoldForReview_ThenApprove_EndsAccepted()
+    {
+        var score = Score.Submit(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), 1, "nonce-0123456789", null, Now);
+
+        score.HoldForReview();
+        score.Status.ShouldBe(ScoreStatus.PendingReview);
+
+        score.Approve().IsSuccess.ShouldBeTrue();
+        score.Status.ShouldBe(ScoreStatus.Accepted);
+    }
+
+    [Fact]
+    public void Approve_WhenNotPending_ReturnsNotPending()
+    {
+        var score = Score.Submit(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), 1, "nonce-0123456789", null, Now);
+
+        score.Approve().Error.ShouldBe(ScoreErrors.NotPending);
+    }
+
+    [Fact]
+    public void HoldForReview_WhenAlreadyRejected_Throws()
+    {
+        var score = Score.Submit(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), 1, "nonce-0123456789", null, Now);
+        score.Reject();
+
+        Should.Throw<DomainException>(score.HoldForReview);
+    }
+
+    [Fact]
     public void Reject_ChangesStatus()
     {
         var score = Score.Submit(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), 1, "nonce-0123456789", null, Now);

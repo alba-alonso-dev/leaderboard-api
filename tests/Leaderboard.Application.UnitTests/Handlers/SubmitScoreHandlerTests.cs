@@ -79,6 +79,19 @@ public sealed class SubmitScoreHandlerTests
     }
 
     [Fact]
+    public async Task Submit_ImplausibleJump_IsHeldForReviewAndNotRanked()
+    {
+        _scores.GetBestScoreAsync(_game.Id, _playerId, Arg.Any<CancellationToken>()).Returns(50L);
+
+        var result = await Sut().HandleAsync(Command(value: 900), CancellationToken.None); // 18x the previous best
+
+        result.Value.Status.ShouldBe(ScoreStatus.PendingReview);
+        result.Value.IsPersonalBest.ShouldBeFalse();
+        _scores.Received(1).Add(Arg.Is<Score>(s => s.Status == ScoreStatus.PendingReview));
+        await _scores.DidNotReceive().UpsertLeaderboardEntryAsync(Arg.Any<Score>(), Arg.Any<long>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Submit_WithUsedNonceAndDifferentPayload_ReturnsNonceReused()
     {
         var previous = Score.Submit(_game.Id, _playerId, _apiKeyId, 100, "0123456789abcdef", null, _time.GetUtcNow());

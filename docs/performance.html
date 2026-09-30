@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Benchmark k6 y planes de ejecución">
+<title>Rendimiento (RNF-01) · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
+      <ul>
+        <li><a href="index.html">Inicio<small>Índice de la documentación</small></a></li>
+        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="performance.html" aria-current="page">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#1-objetivo">1. Objetivo</a></li>
+<li><a href="#2-metodologia">2. Metodología</a></li>
+<li><a href="#3-resultados">3. Resultados</a></li>
+<li><a href="#4-diagnostico-y-cambios">4. Diagnóstico y cambios</a></li>
+<li><a href="#5-planes-de-ejecucion-diseno-final">5. Planes de ejecución (diseño final)</a></li>
+<li><a href="#6-limites-conocidos">6. Límites conocidos</a></li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="rendimiento-rnf-01">Rendimiento (RNF-01)<a class="headerlink" href="#rendimiento-rnf-01" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Documento:</strong> <code>docs/performance.md</code> · <strong>Fecha de la medición:</strong> 2027-03 · <strong>Versión de la API:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="requirements.html#3-requerimientos-no-funcionales">Requerimientos RNF-01</a> · <a href="architecture.html#3-modelo-de-datos">Arquitectura §3</a> · <a href="adr/0001-postgresql.html">ADR-001</a></p>
+</blockquote>
+<h2 id="1-objetivo">1. Objetivo<a class="headerlink" href="#1-objetivo" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operación</th>
+<th>Objetivo p95</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Top N, página del ranking, posición absoluta, ventana relativa</td>
+<td><strong>&lt; 100 ms</strong></td>
+</tr>
+<tr>
+<td>Envío de puntuación firmado (HMAC)</td>
+<td><strong>&lt; 150 ms</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>Con <strong>100 000 jugadores</strong> en un mismo juego y el entorno <code>docker compose</code> local.</p>
+<h2 id="2-metodologia">2. Metodología<a class="headerlink" href="#2-metodologia" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entorno</td>
+<td><code>docker compose</code> (API en imagen <em>chiseled</em> + <code>postgres:18-alpine</code>), 4 vCPU, misma máquina que el generador de carga</td>
+</tr>
+<tr>
+<td>Datos</td>
+<td>100 000 jugadores con una puntuación cada uno (<code>perf/seed.sql</code>), <code>VACUUM ANALYZE</code> tras la carga</td>
+</tr>
+<tr>
+<td>Herramienta</td>
+<td><a href="https://k6.io">k6</a> (<code>perf/leaderboard.js</code>), escenarios de tasa constante durante 60 s</td>
+</tr>
+<tr>
+<td>Carga</td>
+<td><strong>100 lecturas/s</strong> (25 % Top 10, 25 % página aleatoria de 20 entre las primeras 5 000, 25 % posición absoluta, 25 % ventana <code>range=5</code>) + <strong>20 envíos firmados/s</strong></td>
+</tr>
+<tr>
+<td>Configuración</td>
+<td><code>RATE_LIMITING_ENABLED=false</code> (si no, el rate limiting por IP limita al propio k6)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Reproducción:</p>
+<pre><code class="language-bash">RATE_LIMITING_ENABLED=false docker compose up -d --build --wait
+# 1) Crear juego + API key (Swagger o scripts/smoke-test.sh) y anotar GAME_ID, API_KEY_ID (uuid), KEY_ID y SECRET
+docker compose exec -T postgres psql -U leaderboard -d leaderboard \
+  -v game_id=$GAME_ID -v api_key_id=$API_KEY_ID -v players=100000 &lt; perf/seed.sql
+docker run --rm --network host -v &quot;$PWD/perf:/perf&quot; \
+  -e GAME_ID=$GAME_ID -e KEY_ID=$KEY_ID -e SECRET=$SECRET grafana/k6 run /perf/leaderboard.js
+</code></pre>
+<h2 id="3-resultados">3. Resultados<a class="headerlink" href="#3-resultados" title="Enlace a esta sección">#</a></h2>
+<p>La primera medición <strong>no cumplía</strong> el objetivo; el análisis de los planes de ejecución llevó a un rediseño del índice y de las consultas.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Operación (p95)</th>
+<th style="text-align: right;">Diseño inicial</th>
+<th style="text-align: right;">Diseño final</th>
+<th style="text-align: right;">Objetivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Top 10</td>
+<td style="text-align: right;">263 ms</td>
+<td style="text-align: right;"><strong>11,6 ms</strong></td>
+<td style="text-align: right;">&lt; 100 ms ✅</td>
+</tr>
+<tr>
+<td>Página (offset ≤ 100 000)</td>
+<td style="text-align: right;">4 670 ms</td>
+<td style="text-align: right;"><strong>48,8 ms</strong></td>
+<td style="text-align: right;">&lt; 100 ms ✅</td>
+</tr>
+<tr>
+<td>Posición absoluta</td>
+<td style="text-align: right;">782 ms</td>
+<td style="text-align: right;"><strong>32,9 ms</strong></td>
+<td style="text-align: right;">&lt; 100 ms ✅</td>
+</tr>
+<tr>
+<td>Ventana relativa (±5)</td>
+<td style="text-align: right;">2 850 ms</td>
+<td style="text-align: right;"><strong>38,8 ms</strong></td>
+<td style="text-align: right;">&lt; 100 ms ✅</td>
+</tr>
+<tr>
+<td>Envío firmado</td>
+<td style="text-align: right;">1 090 ms</td>
+<td style="text-align: right;"><strong>52,9 ms</strong></td>
+<td style="text-align: right;">&lt; 150 ms ✅</td>
+</tr>
+<tr>
+<td>Throughput sostenido</td>
+<td style="text-align: right;">57 req/s (saturado, 50 % de iteraciones descartadas)</td>
+<td style="text-align: right;"><strong>120 req/s</strong> (0 descartadas)</td>
+<td style="text-align: right;">120 req/s</td>
+</tr>
+<tr>
+<td>Errores</td>
+<td style="text-align: right;">0 %</td>
+<td style="text-align: right;">0 %</td>
+<td style="text-align: right;">&lt; 1 %</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-diagnostico-y-cambios">4. Diagnóstico y cambios<a class="headerlink" href="#4-diagnostico-y-cambios" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Síntoma (diseño inicial)</th>
+<th>Causa en el plan</th>
+<th>Cambio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Página: 168 ms en frío, segundos bajo carga</td>
+<td><em>Hash Join</em> de las 100 000 filas con <code>players</code> + <em>external merge sort</em> en disco: se paginaba <strong>después</strong> del join.</td>
+<td>Paginar el índice primero (<code>ORDER BY … OFFSET … LIMIT</code> en subconsulta) y unir usuarios solo para las filas devueltas.</td>
+</tr>
+<tr>
+<td>Cada petición de ranking pagaba 17 ms extra</td>
+<td><code>COUNT(*)</code> total con <em>Seq Scan</em> para calcular <code>totalCount</code>/percentil.</td>
+<td>Contador exacto <code>leaderboard_stats.player_count</code>, mantenido <strong>en la misma sentencia</strong> del upsert (<code>RETURNING (xmax = 0)</code> detecta la primera entrada del jugador).</td>
+</tr>
+<tr>
+<td>Ventana relativa en segundos</td>
+<td>El índice <code>(sort_key DESC, achieved_at ASC, player_id ASC)</code> mezclaba direcciones: no admite comparación de tuplas y PostgreSQL ordenaba decenas de miles de filas por petición.</td>
+<td>Clave normalizada <strong><code>rank_key</code> (menor es mejor)</strong> e índice <strong>totalmente ascendente</strong> <code>(game_id, rank_key, achieved_at, player_id) INCLUDE (best_score, score_id)</code>. Las búsquedas usan <code>(rank_key, achieved_at, player_id) &lt; (…)</code> → <em>Index Scan Backward</em> con <code>LIMIT k</code>.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="5-planes-de-ejecucion-diseno-final">5. Planes de ejecución (diseño final)<a class="headerlink" href="#5-planes-de-ejecucion-diseno-final" title="Enlace a esta sección">#</a></h2>
+<p><strong>Top 10</strong> — 0,4 ms, <em>Index Only Scan</em> + 10 búsquedas por PK:</p>
+<pre><code class="language-text">Nested Loop (actual time=0.082..0.276 rows=10)
+  -&gt;  Limit
+        -&gt;  Index Only Scan using ix_leaderboard_entries_rank (rows=10)  Index Cond: (game_id = &lt;game&gt;)
+  -&gt;  Index Scan using pk_players on players p (loops=10)
+Execution Time: 0.378 ms
+</code></pre>
+<p><strong>Ventana relativa (5 por encima del jugador 50 001)</strong> — 0,08 ms:</p>
+<pre><code class="language-text">Limit (actual time=0.037..0.045 rows=5)
+  -&gt;  Index Scan Backward using ix_leaderboard_entries_rank
+        Index Cond: ((game_id = &lt;game&gt;) AND (ROW(rank_key, achieved_at, player_id) &lt; ROW(...)))
+Execution Time: 0.081 ms
+</code></pre>
+<p><strong>Página profunda (OFFSET 50 000)</strong> — 39 ms, <em>Index Only Scan</em> que recorre 50 020 entradas del índice:</p>
+<pre><code class="language-text">Nested Loop (rows=20)
+  -&gt;  Limit  -&gt;  Index Only Scan using ix_leaderboard_entries_rank (rows=50020)
+  -&gt;  Index Scan using pk_players (loops=20)
+Execution Time: 38.769 ms
+</code></pre>
+<p><strong>Posición absoluta del jugador 50 001</strong> — 19 ms, cuenta las 50 000 entradas por delante:</p>
+<pre><code class="language-text">Aggregate  -&gt;  Seq Scan on leaderboard_entries  Filter: (ROW(rank_key, achieved_at, player_id) &lt; ROW(...))
+Execution Time: 19.180 ms
+</code></pre>
+<h2 id="6-limites-conocidos">6. Límites conocidos<a class="headerlink" href="#6-limites-conocidos" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Límite</th>
+<th>Coste</th>
+<th>Cuándo importa</th>
+<th>Evolución (ADR-004)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Paginación por offset</td>
+<td>O(offset)</td>
+<td>Páginas muy profundas (&gt; 100 000)</td>
+<td>Paginación <em>keyset</em> con cursor opaco (<code>?after=</code>) reutilizando la misma comparación de tuplas.</td>
+</tr>
+<tr>
+<td>Rango absoluto</td>
+<td>O(rank)</td>
+<td>Juegos con &gt; 1 M de jugadores y consultas de jugadores en la cola</td>
+<td>Redis Sorted Sets (<code>ZREVRANK</code>, O(log n)) como caché del ranking.</td>
+</tr>
+<tr>
+<td>Contador de jugadores</td>
+<td>1 fila caliente por juego al entrar jugadores nuevos</td>
+<td>Picos de miles de altas por segundo en un mismo juego</td>
+<td>Contador particionado o agregación asíncrona.</td>
+</tr>
+<tr>
+<td>Generador y sistema bajo prueba en la misma máquina</td>
+<td>Resultados conservadores</td>
+<td>—</td>
+<td>Medir en infraestructura separada antes de producción.</td>
+</tr>
+</tbody>
+</table></div>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="performance.md"><code>docs/performance.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

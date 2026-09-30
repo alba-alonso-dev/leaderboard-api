@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Fases Noviembre → Marzo">
+<title>Roadmap y Plan de Tareas · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
+      <ul>
+        <li><a href="index.html">Inicio<small>Índice de la documentación</small></a></li>
+        <li><a href="requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="roadmap-and-tasks.html" aria-current="page">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="adr/0003-anti-cheat.html">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#1-vision-temporal">1. Visión temporal</a></li>
+<li><a href="#2-forma-de-trabajo">2. Forma de trabajo</a></li>
+<li><a href="#3-fase-0-septiembreoctubre-analisis-y-diseno">3. Fase 0 · Septiembre–Octubre — Análisis y diseño ✅</a></li>
+<li><a href="#4-fase-1-noviembre-base-funcional-swagger">4. Fase 1 · Noviembre — Base funcional + Swagger</a><ul>
+<li><a href="#41-scaffolding-y-fundamentos">4.1 Scaffolding y fundamentos</a></li>
+<li><a href="#42-dominio-y-persistencia">4.2 Dominio y persistencia</a></li>
+<li><a href="#43-autenticacion-rf-01-rf-02-rf-05-rf-06">4.3 Autenticación (RF-01, RF-02, RF-05, RF-06)</a></li>
+<li><a href="#44-juegos-y-api-keys-rf-10rf-15">4.4 Juegos y API Keys (RF-10…RF-15)</a></li>
+<li><a href="#45-scores-y-leaderboard-rf-20rf-27">4.5 Scores y Leaderboard (RF-20…RF-27)</a></li>
+<li><a href="#46-cierre-de-fase">4.6 Cierre de fase</a></li>
+</ul>
+</li>
+<li><a href="#5-fase-2-diciembre-tests-documentacion-extensa">5. Fase 2 · Diciembre — Tests + documentación extensa</a><ul>
+<li><a href="#51-infraestructura-de-tests">5.1 Infraestructura de tests</a></li>
+<li><a href="#52-tests-unitarios">5.2 Tests unitarios</a></li>
+<li><a href="#53-tests-de-integracion-una-clase-por-feature">5.3 Tests de integración (una clase por feature)</a></li>
+<li><a href="#54-funcionalidad-y-documentacion">5.4 Funcionalidad y documentación</a></li>
+</ul>
+</li>
+<li><a href="#6-fase-3-enero-clean-architecture-adrs">6. Fase 3 · Enero — Clean Architecture + ADRs</a><ul>
+<li><a href="#61-refactor">6.1 Refactor</a></li>
+<li><a href="#62-anti-cheat-primera-parte">6.2 Anti-cheat (primera parte)</a></li>
+<li><a href="#63-adrs">6.3 ADRs</a></li>
+</ul>
+</li>
+<li><a href="#7-fase-4-febrero-docker-ci">7. Fase 4 · Febrero — Docker + CI</a><ul>
+<li><a href="#71-containerizacion">7.1 Containerización</a></li>
+<li><a href="#72-integracion-continua">7.2 Integración continua</a></li>
+</ul>
+</li>
+<li><a href="#8-fase-5-marzo-observabilidad-y-resiliencia">8. Fase 5 · Marzo — Observabilidad y resiliencia</a><ul>
+<li><a href="#81-logging-estructurado">8.1 Logging estructurado</a></li>
+<li><a href="#82-health-checks">8.2 Health checks</a></li>
+<li><a href="#83-rate-limiting-y-anti-cheat-segunda-parte">8.3 Rate limiting y anti-cheat (segunda parte)</a></li>
+<li><a href="#84-resiliencia-rendimiento-y-cierre">8.4 Resiliencia, rendimiento y cierre</a></li>
+</ul>
+</li>
+<li><a href="#9-matriz-de-trazabilidad">9. Matriz de trazabilidad</a></li>
+<li><a href="#10-riesgos-y-mitigaciones">10. Riesgos y mitigaciones</a></li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="roadmap-y-plan-de-tareas">Roadmap y Plan de Tareas<a class="headerlink" href="#roadmap-y-plan-de-tareas" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Documento:</strong> <code>docs/roadmap-and-tasks.md</code> · <strong>Estado:</strong> Fases 1–5 implementadas (quedan tareas de publicación marcadas como pendientes) · <strong>Versión:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="architecture.html">Arquitectura</a> · <a href="coding-standards.html">Estándares de código</a></p>
+</blockquote>
+<h2 id="1-vision-temporal">1. Visión temporal<a class="headerlink" href="#1-vision-temporal" title="Enlace a esta sección">#</a></h2>
+<pre class="mermaid">gantt
+    title Leaderboard REST API · Noviembre → Marzo
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d %b
+
+    section Fase 0 · Diseño
+    Análisis, arquitectura y plan        :done,    f0, 2026-09-28, 2026-10-31
+
+    section Fase 1 · Nov
+    Scaffolding + dominio + EF Core       :         n1, 2026-11-01, 7d
+    Auth JWT                              :         n2, after n1, 6d
+    Juegos + API Keys                     :         n3, after n2, 6d
+    Scores + Leaderboard + Swagger        :         n4, after n3, 11d
+
+    section Fase 2 · Dic
+    Tests unitarios                       :         d1, 2026-12-01, 8d
+    Tests de integración (Testcontainers) :         d2, after d1, 10d
+    Refresh tokens + README extenso       :         d3, after d2, 8d
+
+    section Fase 3 · Ene
+    Refactor a Clean Architecture         :         e1, 2027-01-05, 12d
+    HMAC + idempotencia                   :         e2, after e1, 8d
+    ADR-001/002/003 + tests arquitectura  :         e3, after e1, 12d
+
+    section Fase 4 · Feb
+    Dockerfile + Compose                  :         f1, 2027-02-02, 10d
+    GitHub Actions CI                     :         f2, after f1, 10d
+
+    section Fase 5 · Mar
+    Serilog + Health Checks               :         m1, 2027-03-02, 8d
+    Rate limiting + anti-cheat            :         m2, after m1, 10d
+    Benchmark, pulido y release v1.0      :milestone, m3, 2027-03-27, 1d
+</pre>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Fase</th>
+<th>Mes</th>
+<th>Objetivo</th>
+<th>Entregable demostrable</th>
+<th>Tag</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Sep–Oct</td>
+<td>Diseño completo antes de escribir código</td>
+<td>Este conjunto de documentos</td>
+<td><code>v0.0-design</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>Nov</td>
+<td>Base funcional con endpoints mínimos</td>
+<td>Swagger local: registro → login → juego → API Key → score → ranking</td>
+<td><code>v0.1.0</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Dic</td>
+<td>Confianza: tests + documentación</td>
+<td>Suite verde (unit + integración) y README extenso</td>
+<td><code>v0.2.0</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Ene</td>
+<td>Arquitectura sostenible</td>
+<td>4 proyectos Clean Architecture, 3 ADR, HMAC activo</td>
+<td><code>v0.3.0</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Feb</td>
+<td>Reproducibilidad</td>
+<td><code>docker compose up</code> + CI verde en cada PR</td>
+<td><code>v0.4.0</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Mar</td>
+<td>Producción-ready</td>
+<td>Logs estructurados, health checks, rate limiting, benchmark</td>
+<td><code>v1.0.0</code></td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<blockquote>
+<p><strong>Nota de ejecución.</strong> Las fases 1–5 se implementaron de forma consecutiva en la rama <code>claude/leaderboard-implementation</code>, con un commit por fase. Al no existir un periodo de uso entre fases, la Fase 1 se construyó directamente con la estructura de Clean Architecture (la Fase 3 aportó los tests de arquitectura y los ADR en lugar de un refactor), y el benchmark de la Fase 5 obligó a rediseñar el índice de ranking (<a href="performance.html">performance.md</a>).</p>
+</blockquote>
+<h2 id="2-forma-de-trabajo">2. Forma de trabajo<a class="headerlink" href="#2-forma-de-trabajo" title="Enlace a esta sección">#</a></h2>
+<ul>
+<li><strong>Gestión:</strong> un <em>GitHub Issue</em> por tarea (IDs de este documento en el título, p. ej. <code>[N-12] Endpoint Top N</code>), agrupados en un <em>Milestone</em> por fase y un <em>Project board</em> (Backlog → In progress → Review → Done).</li>
+<li><strong>Ramas:</strong> <em>trunk-based</em> con ramas cortas <code>feat/…</code>, <code>fix/…</code>, <code>docs/…</code>, <code>test/…</code>; PR obligatorio a <code>main</code> con CI verde (desde Febrero, <em>branch protection</em>).</li>
+<li><strong>Commits:</strong> <a href="https://www.conventionalcommits.org/">Conventional Commits</a> (<code>feat(scores): submit score endpoint</code>).</li>
+<li><strong>Definition of Done por tarea:</strong> código + tests relevantes + Swagger actualizado + sin warnings + documentación afectada actualizada.</li>
+<li><strong>Estimación:</strong> tamaños S (≤ 2 h), M (≤ ½ día), L (≤ 1 día). Ninguna tarea L sin dividir si supera 1 día.</li>
+</ul>
+<hr />
+<h2 id="3-fase-0-septiembreoctubre-analisis-y-diseno">3. Fase 0 · Septiembre–Octubre — Análisis y diseño ✅<a class="headerlink" href="#3-fase-0-septiembreoctubre-analisis-y-diseno" title="Enlace a esta sección">#</a></h2>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F0-01</strong> Análisis de requerimientos (RF, RNF, historias Gherkin) — <code>docs/requirements.md</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F0-02</strong> Arquitectura objetivo, modelo de datos, contrato REST, seguridad — <code>docs/architecture.md</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F0-03</strong> Plan de fases y tareas — <code>docs/roadmap-and-tasks.md</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F0-04</strong> Estándares de código y testing — <code>docs/coding-standards.md</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F0-05</strong> Generador de documentación HTML navegable — <code>scripts/build_docs.py</code></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F0-06</strong> Crear Milestones, labels (<code>type:feat</code>, <code>area:auth</code>, <code>phase:nov</code>…) e Issues a partir de este documento — <em>pendiente: requiere configurar el repositorio en GitHub</em></li>
+</ul>
+<hr />
+<h2 id="4-fase-1-noviembre-base-funcional-swagger">4. Fase 1 · Noviembre — Base funcional + Swagger<a class="headerlink" href="#4-fase-1-noviembre-base-funcional-swagger" title="Enlace a esta sección">#</a></h2>
+<p><strong>Objetivo:</strong> flujo completo usable desde Swagger contra PostgreSQL local.
+<strong>Estructura:</strong> un único proyecto <code>Leaderboard.Api</code> con carpetas <code>Domain/</code>, <code>Application/</code>, <code>Infrastructure/</code>, <code>Endpoints/</code> (prepara el refactor de Enero).</p>
+<h3 id="41-scaffolding-y-fundamentos">4.1 Scaffolding y fundamentos<a class="headerlink" href="#41-scaffolding-y-fundamentos" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-01</strong> (S) <code>global.json</code> fijando SDK .NET 10 LTS; solución <code>Leaderboard.sln</code>; <code>.gitignore</code>, <code>.editorconfig</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-02</strong> (S) <code>Directory.Build.props</code> (<code>Nullable</code>, <code>ImplicitUsings</code>, <code>TreatWarningsAsErrors</code>, <code>AnalysisLevel=latest-recommended</code>) y <code>Directory.Packages.props</code> (gestión central de versiones)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-03</strong> (S) Proyecto <code>Leaderboard.Api</code> (Minimal APIs) con carpetas por capa</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-04</strong> (S) <code>compose.yaml</code> mínimo <strong>solo con PostgreSQL</strong> para desarrollo local (la API corre con <code>dotnet run</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-05</strong> (M) OpenAPI (<code>Microsoft.AspNetCore.OpenApi</code>) + Swagger UI en <code>/swagger</code> (solo Development) con esquema Bearer</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-06</strong> (M) ProblemDetails global: <code>AddProblemDetails</code> + <code>IExceptionHandler</code> + <code>traceId</code> + <code>code</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-07</strong> (M) Tipos base: <code>Result&lt;T&gt;</code>, <code>Error</code>, <code>ErrorType</code> y extensión <code>Result → IResult</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-08</strong> (S) <code>PagedResult&lt;T&gt;</code> + <code>PageRequest</code> con validación (<code>page ≥ 1</code>, <code>1 ≤ pageSize ≤ 100</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-09</strong> (S) FluentValidation + filtro de endpoint <code>ValidationFilter&lt;T&gt;</code> → <code>ValidationProblemDetails</code></li>
+</ul>
+<h3 id="42-dominio-y-persistencia">4.2 Dominio y persistencia<a class="headerlink" href="#42-dominio-y-persistencia" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-10</strong> (M) Entidades de dominio: <code>Player</code>, <code>Game</code> (con <code>ScoreOrder</code>, <code>ScoreRange</code>), <code>GameApiKey</code>, <code>Score</code>, <code>LeaderboardEntry</code> + tests de invariantes básicos</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-11</strong> (M) <code>AppDbContext</code> + <code>IEntityTypeConfiguration&lt;T&gt;</code> por entidad (snake_case con <code>EFCore.NamingConventions</code>, <code>citext</code>, <code>xmin</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-12</strong> (M) Migración inicial <code>InitialCreate</code> con índices de la sección 3.3 de arquitectura</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-13</strong> (S) Aplicar migraciones al arrancar si <code>Database:MigrateOnStartup=true</code></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-14</strong> (S) Seed opcional de datos de demo (juego + 50 jugadores) en Development — <em>parcial: solo el administrador (<code>Seed:Admin</code>); los datos masivos están en <code>perf/seed.sql</code></em></li>
+</ul>
+<h3 id="43-autenticacion-rf-01-rf-02-rf-05-rf-06">4.3 Autenticación (RF-01, RF-02, RF-05, RF-06)<a class="headerlink" href="#43-autenticacion-rf-01-rf-02-rf-05-rf-06" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-15</strong> (M) <code>POST /auth/register</code> con <code>PasswordHasher&lt;Player&gt;</code>, unicidad email/username → <code>409</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-16</strong> (M) <code>JwtTokenService</code> (HS256, 15 min, claims <code>sub</code>, <code>unique_name</code>, <code>role</code>, <code>jti</code>) + opciones validadas al arrancar (<code>ValidateOnStart</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-17</strong> (S) <code>POST /auth/login</code> con error genérico <code>auth.invalid_credentials</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-18</strong> (S) <code>GET /players/me</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-19</strong> (S) Swagger: botón <em>Authorize</em> funcional con Bearer</li>
+</ul>
+<h3 id="44-juegos-y-api-keys-rf-10rf-15">4.4 Juegos y API Keys (RF-10…RF-15)<a class="headerlink" href="#44-juegos-y-api-keys-rf-10rf-15" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-20</strong> (M) <code>POST /games</code>, <code>GET /games</code> (paginado + <code>search</code>), <code>GET /games/{id}</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-21</strong> (M) Política <code>GameOwner</code> (autorización por recurso, <code>404</code> si no es propietario)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-22</strong> (S) <code>PATCH /games/{id}</code> y <code>DELETE /games/{id}</code> (archivar)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-23</strong> (M) Emisión de API Key: <code>keyId</code> (<code>lbk_</code> + 16 chars), secreto 256 bits (<code>RandomNumberGenerator</code>), cifrado con Data Protection; secreto devuelto una sola vez</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-24</strong> (S) Listar y revocar API Keys</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-25</strong> (M) <code>ApiKeyAuthenticationHandler</code> modo simple (<code>X-Api-Key: keyId.secret</code>, <code>FixedTimeEquals</code>) + política <code>GameServer</code></li>
+</ul>
+<h3 id="45-scores-y-leaderboard-rf-20rf-27">4.5 Scores y Leaderboard (RF-20…RF-27)<a class="headerlink" href="#45-scores-y-leaderboard-rf-20rf-27" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-26</strong> (L) <code>POST /games/{id}/scores</code>: validación de rango, juego activo, jugador existente; transacción con INSERT score + upsert <code>ON CONFLICT</code> de <code>leaderboard_entries</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-27</strong> (M) Respuesta con <code>isPersonalBest</code>, <code>bestScore</code>, <code>rank</code>, <code>totalPlayers</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-28</strong> (M) <code>LeaderboardReadService</code>: Top N y ranking paginado con <code>rank_key</code> normalizado y desempate</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-29</strong> (M) Posición absoluta (rango + percentil)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-30</strong> (M) Ventana relativa (<code>around?range=k</code>) con dos consultas keyset</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-31</strong> (S) Ejemplos y descripciones OpenAPI en todos los endpoints (<code>WithSummary</code>, <code>Produces&lt;ProblemDetails&gt;</code>)</li>
+</ul>
+<h3 id="46-cierre-de-fase">4.6 Cierre de fase<a class="headerlink" href="#46-cierre-de-fase" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-32</strong> (S) Colección <code>.http</code> (<code>Leaderboard.Api.http</code>) con el flujo completo de demo — <em>sustituido por Swagger UI con firma en el navegador y <code>samples/submit-score.sh</code></em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-33</strong> (S) README: sección «Cómo ejecutar» (versión provisional con <code>dotnet run</code>)</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-34</strong> (S) Tag <code>v0.1.0</code> + nota de release — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+</ul>
+<p><strong>✅ Criterio de salida:</strong> desde Swagger se completa registro → login → crear juego → emitir clave → enviar 3 scores (con la clave) → Top N y posición correctos.</p>
+<hr />
+<h2 id="5-fase-2-diciembre-tests-documentacion-extensa">5. Fase 2 · Diciembre — Tests + documentación extensa<a class="headerlink" href="#5-fase-2-diciembre-tests-documentacion-extensa" title="Enlace a esta sección">#</a></h2>
+<p><strong>Objetivo:</strong> red de seguridad antes del refactor de Enero (los tests de integración son el contrato que el refactor no puede romper).</p>
+<h3 id="51-infraestructura-de-tests">5.1 Infraestructura de tests<a class="headerlink" href="#51-infraestructura-de-tests" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-01</strong> (S) Proyectos <code>Leaderboard.UnitTests</code> y <code>Leaderboard.IntegrationTests</code> (xUnit v3, Shouldly, NSubstitute, coverlet)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-02</strong> (M) <code>ApiFactory : WebApplicationFactory&lt;Program&gt;, IAsyncLifetime</code> con <strong>Testcontainers PostgreSQL</strong> (un contenedor por colección)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-03</strong> (M) <strong>Respawn</strong> para limpiar la BD entre tests; builders de datos (<code>PlayerBuilder</code>, <code>GameBuilder</code>) y helpers <code>AuthenticateAsAsync(...)</code>, <code>CreateApiKeyAsync(...)</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-04</strong> (S) <code>FakeTimeProvider</code> registrado en tests para controlar tiempo (expiración de tokens, desempates)</li>
+</ul>
+<h3 id="52-tests-unitarios">5.2 Tests unitarios<a class="headerlink" href="#52-tests-unitarios" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-05</strong> (M) Dominio: <code>Game.IsBetter(a, b)</code>, <code>ScoreRange</code>, <code>RankKey</code> para ambos <code>ScoreOrder</code>, invariantes de <code>Player</code>/<code>Game</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-06</strong> (M) Validadores FluentValidation (casos límite de username, password, paginación, <code>n</code>, <code>range</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-07</strong> (M) Handlers de aplicación con repositorios falsos (registro duplicado, juego archivado, fuera de rango)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-08</strong> (S) <code>JwtTokenService</code> (claims, expiración) y generación/verificación de API Keys</li>
+</ul>
+<h3 id="53-tests-de-integracion-una-clase-por-feature">5.3 Tests de integración (una clase por feature)<a class="headerlink" href="#53-tests-de-integracion-una-clase-por-feature" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-09</strong> (M) Auth: registro, duplicados, login OK/KO, <code>/players/me</code> con y sin token</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-10</strong> (M) Games: CRUD, BOLA (otro usuario → <code>404</code>), archivado</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-11</strong> (M) API Keys: emisión (secreto solo una vez), listado sin secreto, revocación → <code>401</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-12</strong> (L) Scores: récord personal, score peor, fuera de rango, juego archivado, clave de otro juego (<code>403</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-13</strong> (L) Leaderboard: Top N con empates, <code>LowerIsBetter</code>, paginación, bordes de la ventana relativa, percentil</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-14</strong> (M) <strong>Concurrencia</strong>: 50 envíos paralelos del mismo jugador → una sola entrada con el máximo correcto (RNF-07)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-15</strong> (S) Contrato de errores: todas las respuestas 4xx/5xx son <code>application/problem+json</code> con <code>traceId</code> y <code>code</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-16</strong> (S) El documento OpenAPI se genera sin errores (<code>GET /openapi/v1.json</code> → 200)</li>
+</ul>
+<h3 id="54-funcionalidad-y-documentacion">5.4 Funcionalidad y documentación<a class="headerlink" href="#54-funcionalidad-y-documentacion" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-17</strong> (M) Refresh tokens con rotación y detección de reutilización (RF-03) + <code>POST /auth/logout</code> (RF-04)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-18</strong> (S) <code>GET /leaderboard/me</code> y <code>GET /players/me/scores</code> (RF-28)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-19</strong> (M) README extenso: arquitectura, decisiones, ejemplos <code>curl</code>, cómo ejecutar tests, badges</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-20</strong> (S) Informe de cobertura (ReportGenerator) y umbral objetivo documentado</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>D-21</strong> (S) Tag <code>v0.2.0</code> — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+</ul>
+<p><strong>✅ Criterio de salida:</strong> <code>dotnet test</code> verde en local; cobertura Domain+Application ≥ 70 % (objetivo final 80 %).</p>
+<hr />
+<h2 id="6-fase-3-enero-clean-architecture-adrs">6. Fase 3 · Enero — Clean Architecture + ADRs<a class="headerlink" href="#6-fase-3-enero-clean-architecture-adrs" title="Enlace a esta sección">#</a></h2>
+<p><strong>Objetivo:</strong> separar en 4 proyectos <strong>sin cambiar el comportamiento externo</strong> (los tests de integración de Diciembre son el árbitro).</p>
+<h3 id="61-refactor">6.1 Refactor<a class="headerlink" href="#61-refactor" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-01</strong> (M) Crear <code>Leaderboard.Domain</code> y mover entidades/VOs/errores (sin dependencias NuGet)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-02</strong> (L) Crear <code>Leaderboard.Application</code>: mover handlers, DTOs, validadores; definir puertos (<code>IPlayerRepository</code>, <code>IGameRepository</code>, <code>IScoreRepository</code>, <code>IUnitOfWork</code>, <code>ILeaderboardReadService</code>, <code>ITokenService</code>, <code>ICurrentUser</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-03</strong> (M) Abstracciones CQRS liviano (<code>ICommand&lt;T&gt;</code>, <code>ICommandHandler&lt;,&gt;</code>, <code>IQuery&lt;T&gt;</code>, <code>IQueryHandler&lt;,&gt;</code>) + registro por <em>assembly scanning</em> (Scrutor) + decoradores de validación y logging</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-04</strong> (L) Crear <code>Leaderboard.Infrastructure</code>: <code>AppDbContext</code>, configuraciones, migraciones, repositorios, read services, seguridad; <code>AddInfrastructure(IConfiguration)</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-05</strong> (M) Adelgazar <code>Leaderboard.Api</code>: solo endpoints, auth handlers, error handling, composición</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-06</strong> (M) Separar tests: <code>Domain.UnitTests</code>, <code>Application.UnitTests</code>, <code>Api.IntegrationTests</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-07</strong> (M) <code>Leaderboard.ArchitectureTests</code> con NetArchTest: Domain sin dependencias; Application no referencia Infrastructure/EF/AspNetCore; handlers <code>sealed</code>; endpoints no referencian <code>DbContext</code></li>
+</ul>
+<h3 id="62-anti-cheat-primera-parte">6.2 Anti-cheat (primera parte)<a class="headerlink" href="#62-anti-cheat-primera-parte" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-08</strong> (L) <code>ApiKeyHmacAuthenticationHandler</code>: cadena canónica, ventana ±300 s, <code>FixedTimeEquals</code>; flag <code>ApiKeys:AllowPlainSecret</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-09</strong> (M) Idempotencia por <code>UNIQUE(api_key_id, nonce)</code>: reintento → <code>200</code> con resultado original (RF-29)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-10</strong> (S) Límite de 5 claves activas por juego (RF-16)</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>E-11</strong> (S) Script/cliente de ejemplo (<code>samples/sign-request.ps1</code> y <code>.sh</code>) que firma peticiones para probar desde terminal — <em>parcial: <code>samples/submit-score.sh</code> (bash); falta la variante PowerShell</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-12</strong> (M) Tests de integración HMAC: firma alterada, cuerpo alterado, timestamp caducado, replay, clave revocada</li>
+</ul>
+<h3 id="63-adrs">6.3 ADRs<a class="headerlink" href="#63-adrs" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-13</strong> (M) <code>docs/adr/0001-postgresql.md</code> — PostgreSQL vs SQL Server vs MongoDB vs Redis-first</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-14</strong> (M) <code>docs/adr/0002-clean-architecture.md</code> — Clean vs Vertical Slice vs N-capas; coste/beneficio del refactor</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-15</strong> (M) <code>docs/adr/0003-anti-cheat.md</code> — API Key simple vs HMAC vs JWT de servidor vs mTLS; rate limiting; plausibilidad</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-16</strong> (S) Actualizar <code>docs/architecture.md</code> si alguna decisión cambió; regenerar HTML</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>E-17</strong> (S) Tag <code>v0.3.0</code> — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+</ul>
+<p><strong>✅ Criterio de salida:</strong> 4 proyectos, tests de arquitectura verdes, todos los tests de Diciembre verdes sin modificar sus aserciones, 3 ADR publicados.</p>
+<hr />
+<h2 id="7-fase-4-febrero-docker-ci">7. Fase 4 · Febrero — Docker + CI<a class="headerlink" href="#7-fase-4-febrero-docker-ci" title="Enlace a esta sección">#</a></h2>
+<h3 id="71-containerizacion">7.1 Containerización<a class="headerlink" href="#71-containerizacion" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-01</strong> (M) <code>Dockerfile</code> multi-stage: restore cacheado (copiar <code>*.csproj</code> primero), <code>publish -c Release</code>, runtime <code>aspnet:10.0-noble-chiseled</code>, usuario no root, <code>EXPOSE 8080</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-02</strong> (S) <code>.dockerignore</code> (bin/obj, tests, docs, <code>.git</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-03</strong> (M) <code>compose.yaml</code>: <code>api</code> + <code>postgres:18-alpine</code>, <code>healthcheck</code> con <code>pg_isready</code>, <code>depends_on: service_healthy</code>, volúmenes <code>pgdata</code> (montado en <code>/var/lib/postgresql</code>, nuevo layout de la imagen oficial desde PG 18) y <code>dp-keys</code>, <code>.env.example</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-04</strong> (S) Swagger accesible en <code>http://localhost:8080/swagger</code> con <code>ASPNETCORE_ENVIRONMENT=Development</code> en Compose</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-05</strong> (S) <code>compose.override.yaml</code> opcional con pgAdmin / puertos de debug — <em>pendiente (opcional)</em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-06</strong> (S) Verificar el criterio de aceptación desde un clon limpio en otra máquina/VM — <em>pendiente: lo cubre el job <code>docker</code> del CI en cada PR; falta la verificación manual en otra máquina</em></li>
+</ul>
+<h3 id="72-integracion-continua">7.2 Integración continua<a class="headerlink" href="#72-integracion-continua" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-07</strong> (M) <code>.github/workflows/ci.yml</code>: disparadores <code>push</code> a <code>main</code> y <code>pull_request</code>; <code>actions/setup-dotnet</code> con <code>global.json</code>; caché de NuGet</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-08</strong> (S) Pasos: <code>dotnet restore</code> → <code>dotnet format --verify-no-changes</code> → <code>dotnet build -c Release --no-restore</code> → <code>dotnet test --no-build</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-09</strong> (S) Tests de integración con Testcontainers en <code>ubuntu-latest</code> (Docker disponible en el runner)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-10</strong> (S) Publicar resultados de tests (TRX) y cobertura como artefactos; umbral de cobertura que falla el job</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-11</strong> (M) Job <code>docker</code>: <code>docker build</code> + <em>smoke test</em> (<code>docker compose up -d --wait</code> + <code>curl /health/ready</code> + <code>curl /swagger/index.html</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-12</strong> (S) Job de seguridad: <code>dotnet list package --vulnerable --include-transitive</code> que falle ante vulnerabilidades <em>High</em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-13</strong> (S) Dependabot (NuGet, GitHub Actions, Docker) + <em>branch protection</em> en <code>main</code> — <em>parcial: Dependabot configurado; la protección de rama se activa en los ajustes de GitHub</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-14</strong> (S) Job <code>docs</code>: regenerar HTML (<code>python scripts/build_docs.py</code>) y fallar si hay diferencias (<code>git diff --exit-code docs/</code>)</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-15</strong> (S) Badges de CI y cobertura en README; tag <code>v0.4.0</code> — <em>parcial: badge de CI añadido; falta el tag</em></li>
+</ul>
+<p><strong>✅ Criterio de salida:</strong> clon limpio → <code>docker compose up</code> → Swagger operativo; CI verde en <code>main</code> y en PRs.</p>
+<hr />
+<h2 id="8-fase-5-marzo-observabilidad-y-resiliencia">8. Fase 5 · Marzo — Observabilidad y resiliencia<a class="headerlink" href="#8-fase-5-marzo-observabilidad-y-resiliencia" title="Enlace a esta sección">#</a></h2>
+<h3 id="81-logging-estructurado">8.1 Logging estructurado<a class="headerlink" href="#81-logging-estructurado" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-01</strong> (M) Serilog: <code>builder.Services.AddSerilog(...)</code> configurado desde <code>appsettings</code>, salida <code>CompactJsonFormatter</code> a consola; <em>bootstrap logger</em> para errores de arranque</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-02</strong> (S) <code>UseSerilogRequestLogging</code> con <code>EnrichDiagnosticContext</code> (<code>ApiKeyId</code>, <code>PlayerId</code>, <code>GameId</code> cuando existan)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-03</strong> (S) Filtro/destructuring que impide registrar contraseñas, tokens, secretos y emails</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-04</strong> (S) Decorador de logging en handlers (duración, resultado, <code>code</code> de error)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-05</strong> (S) Test: el <code>traceId</code> del ProblemDetails de un 500 aparece en el log (sink en memoria)</li>
+</ul>
+<h3 id="82-health-checks">8.2 Health checks<a class="headerlink" href="#82-health-checks" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-06</strong> (S) <code>/health/live</code> (sin dependencias) y <code>/health/ready</code> (PostgreSQL) con <em>tags</em> y writer JSON</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-07</strong> (S) <code>HEALTHCHECK</code> en Compose para el servicio <code>api</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-08</strong> (S) Test de integración: <code>ready</code> devuelve <code>503</code> con la BD detenida</li>
+</ul>
+<h3 id="83-rate-limiting-y-anti-cheat-segunda-parte">8.3 Rate limiting y anti-cheat (segunda parte)<a class="headerlink" href="#83-rate-limiting-y-anti-cheat-segunda-parte" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-09</strong> (M) Políticas <code>auth</code>, <code>score-submit</code> (particionada por <code>api_key_id</code>) y <code>public-read</code> (por IP); <code>OnRejected</code> → ProblemDetails <code>429</code> + <code>Retry-After</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-10</strong> (S) Límites configurables por <code>appsettings</code> (<code>RateLimiting:*</code>) y desactivables en tests</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-11</strong> (M) Límite por jugador y juego (10 envíos/min) en el caso de uso</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>M-12</strong> (M) Heurística de plausibilidad → <code>ScoreStatus.PendingReview</code> (RF-32) <em>(Could)</em> — <em>pendiente (Could): ver ADR-004</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-13</strong> (M) <code>DELETE /admin/scores/{id}</code> + recálculo de <em>leaderboard entry</em> (RF-33) <em>(Could)</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-14</strong> (S) Tests de integración de <code>429</code> y de cabecera <code>Retry-After</code></li>
+</ul>
+<h3 id="84-resiliencia-rendimiento-y-cierre">8.4 Resiliencia, rendimiento y cierre<a class="headerlink" href="#84-resiliencia-rendimiento-y-cierre" title="Enlace a esta sección">#</a></h3>
+<ul>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-15</strong> (S) <code>EnableRetryOnFailure</code> en Npgsql (fallos transitorios) compatible con transacciones explícitas (<code>CreateExecutionStrategy</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-16</strong> (S) Timeouts de petición (<code>AddRequestTimeouts</code>) y <code>MaxRequestBodySize</code></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-17</strong> (M) Script <code>k6</code> de carga (100 000 jugadores sembrados) + informe p95 en <code>docs/performance.md</code> (RNF-01)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-18</strong> (S) <code>EXPLAIN ANALYZE</code> de consultas críticas documentado</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-19</strong> (M) ADR-004 «Mejoras futuras» (Redis Sorted Sets, SignalR, microservicios, OpenTelemetry, frontend)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-20</strong> (S) README final: GIF/captura de Swagger, sección «Qué aprendí / trade-offs», enlaces a ADR</li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>M-21</strong> (S) Release <code>v1.0.0</code> — <em>pendiente: release al fusionar en <code>main</code></em></li>
+</ul>
+<p><strong>✅ Criterio de salida (Definition of Done del proyecto):</strong> clonar → <code>docker compose up</code> → Swagger accesible para probar Auth + Score Submit + Ranking → pipeline de CI en verde.</p>
+<hr />
+<h2 id="9-matriz-de-trazabilidad">9. Matriz de trazabilidad<a class="headerlink" href="#9-matriz-de-trazabilidad" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Requerimiento</th>
+<th>Historia</th>
+<th>Endpoint(s)</th>
+<th>Tareas</th>
+<th>Fase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RF-01 Registro</td>
+<td>US-01</td>
+<td><code>POST /auth/register</code></td>
+<td>N-15, D-09</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-02 Login JWT</td>
+<td>US-02</td>
+<td><code>POST /auth/login</code></td>
+<td>N-16, N-17, D-09</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-03/04 Refresh / logout</td>
+<td>US-02</td>
+<td><code>POST /auth/refresh</code>, <code>/logout</code></td>
+<td>D-17</td>
+<td>Dic</td>
+</tr>
+<tr>
+<td>RF-10…12 Juegos</td>
+<td>US-03</td>
+<td><code>/games</code></td>
+<td>N-20…N-22, D-10</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-13…16 API Keys</td>
+<td>US-03, US-07</td>
+<td><code>/games/{id}/api-keys</code></td>
+<td>N-23…N-25, E-10, D-11</td>
+<td>Nov–Ene</td>
+</tr>
+<tr>
+<td>RF-20…23 Envío de score</td>
+<td>US-04</td>
+<td><code>POST /games/{id}/scores</code></td>
+<td>N-26, N-27, D-12, D-14</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-24/25 Top N / ranking</td>
+<td>US-05</td>
+<td><code>/leaderboard</code>, <code>/leaderboard/top</code></td>
+<td>N-28, D-13</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-26/27 Posición</td>
+<td>US-06</td>
+<td><code>/leaderboard/players/{id}[/around]</code></td>
+<td>N-29, N-30, D-13</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-28 Mi posición / historial</td>
+<td>US-06</td>
+<td><code>/leaderboard/me</code>, <code>/players/me/scores</code></td>
+<td>D-18</td>
+<td>Dic</td>
+</tr>
+<tr>
+<td>RF-29/30 Idempotencia + HMAC</td>
+<td>US-04</td>
+<td><code>POST /games/{id}/scores</code></td>
+<td>E-08, E-09, E-12</td>
+<td>Ene</td>
+</tr>
+<tr>
+<td>RF-31…33 Rate limit + moderación</td>
+<td>US-02, US-04</td>
+<td>varios</td>
+<td>M-09…M-14</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td>RF-40…43 Calidad de API</td>
+<td>todas</td>
+<td>todos</td>
+<td>N-05…N-09, D-15, D-16</td>
+<td>Nov / Dic</td>
+</tr>
+<tr>
+<td>RF-44 Health checks</td>
+<td>US-08</td>
+<td><code>/health/*</code></td>
+<td>M-06…M-08</td>
+<td>Mar</td>
+</tr>
+<tr>
+<td>RNF-03 Mantenibilidad</td>
+<td>—</td>
+<td>—</td>
+<td>E-01…E-07, F-08</td>
+<td>Ene / Feb</td>
+</tr>
+<tr>
+<td>RNF-06 Portabilidad</td>
+<td>US-08</td>
+<td>—</td>
+<td>F-01…F-06, F-11</td>
+<td>Feb</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="10-riesgos-y-mitigaciones">10. Riesgos y mitigaciones<a class="headerlink" href="#10-riesgos-y-mitigaciones" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Riesgo</th>
+<th>Prob.</th>
+<th>Impacto</th>
+<th>Mitigación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>El refactor de Enero rompe comportamiento</td>
+<td>Media</td>
+<td>Alto</td>
+<td>Tests de integración de Diciembre como red; refactor en PRs pequeños por capa.</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Testcontainers lento o inestable en CI</td>
+<td>Baja</td>
+<td>Medio</td>
+<td>Un contenedor por colección + Respawn; imagen <code>postgres:18-alpine</code> cacheada.</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>Sobre-ingeniería (CQRS, specs) para un proyecto pequeño</td>
+<td>Media</td>
+<td>Medio</td>
+<td>CQRS «liviano» sin bus; ADR-002 explicita el trade-off y dónde <strong>no</strong> se aplica.</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>Consultas de ranking lentas con muchos datos</td>
+<td>Baja</td>
+<td>Alto</td>
+<td><code>rank_key</code> + índice cubriente; benchmark M-17 (el riesgo se materializó y se corrigió: ver performance.md); plan B Redis documentado.</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Filtración de secretos (JWT key, API Keys)</td>
+<td>Baja</td>
+<td>Alto</td>
+<td>user-secrets / <code>.env</code> no versionado, secret scanning, cifrado Data Protection.</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>Retraso por disponibilidad personal (festivos de Diciembre)</td>
+<td>Alta</td>
+<td>Medio</td>
+<td>Diciembre con menor carga funcional; tareas S/M paralelizables; <em>buffer</em> en la última semana de cada mes.</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>Cambios de licencia en librerías (.NET OSS)</td>
+<td>Media</td>
+<td>Bajo</td>
+<td>Preferir librerías de Microsoft o licencias MIT/Apache estables; decisiones registradas en arquitectura §7.1.</td>
+</tr>
+</tbody>
+</table></div>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="roadmap-and-tasks.md"><code>docs/roadmap-and-tasks.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

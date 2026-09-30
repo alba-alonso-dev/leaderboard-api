@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="HMAC, nonce, rate limiting">
+<title>ADR-003 · Estrategia anti-cheat para el envío de puntuaciones · Leaderboard API</title>
+<link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root {
+  --bg: #ffffff; --bg-soft: #f6f8fa; --bg-sidebar: #f8fafc; --fg: #1f2328; --fg-muted: #57606a;
+  --border: #d0d7de; --accent: #4f46e5; --accent-soft: #eef2ff; --code-bg: #f3f4f6;
+  --quote: #6366f1; --ok: #1a7f37; --shadow: 0 1px 3px rgba(0,0,0,.08);
+  --sidebar-w: 17rem; --content-w: 60rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+    --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+    --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --bg-soft: #161b22; --bg-sidebar: #0f141b; --fg: #e6edf3; --fg-muted: #9198a1;
+  --border: #30363d; --accent: #a5b4fc; --accent-soft: #1e1b4b; --code-bg: #161b22;
+  --quote: #818cf8; --ok: #3fb950; --shadow: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.skip-link { position: absolute; left: -999px; top: .5rem; background: var(--accent); color: var(--bg); padding: .5rem 1rem; z-index: 10; }
+.skip-link:focus { left: .5rem; }
+
+.layout { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 1.25rem;
+  background: var(--bg-sidebar); border-right: 1px solid var(--border); font-size: .92rem;
+}
+.brand { display: block; font-weight: 700; font-size: 1.05rem; color: var(--fg); text-decoration: none; margin-bottom: .25rem; }
+.brand-sub { color: var(--fg-muted); font-size: .8rem; margin: 0 0 1.25rem; }
+.sidebar h2 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); margin: 1.25rem 0 .5rem; border: 0; padding: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.nav a { display: block; padding: .4rem .6rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+.nav a small { display: block; color: var(--fg-muted); font-size: .75rem; }
+.nav a:hover { background: var(--bg-soft); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc ul ul { padding-left: .8rem; }
+.toc a { display: block; padding: .15rem 0; color: var(--fg-muted); text-decoration: none; font-size: .84rem; }
+.toc a:hover { color: var(--accent); }
+.toc > ul > li > ul > li > ul { display: none; }
+.theme-toggle {
+  margin-top: 1.5rem; width: 100%; padding: .45rem; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit; font-size: .85rem;
+}
+
+main { padding: 2.5rem 3rem 4rem; min-width: 0; }
+.content { max-width: var(--content-w); }
+h1, h2, h3, h4 { line-height: 1.3; scroll-margin-top: 1rem; }
+h1 { font-size: 2.1rem; margin-top: 0; }
+h2 { font-size: 1.5rem; margin-top: 2.75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.2rem; margin-top: 2rem; }
+.headerlink { opacity: 0; margin-left: .35rem; text-decoration: none; font-weight: 400; }
+h1:hover .headerlink, h2:hover .headerlink, h3:hover .headerlink, h4:hover .headerlink, .headerlink:focus { opacity: .6; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+blockquote { margin: 1.25rem 0; padding: .75rem 1rem; border-left: 4px solid var(--quote); background: var(--bg-soft); border-radius: 0 6px 6px 0; }
+blockquote p { margin: .25rem 0; }
+code { font-family: ui-monospace, SFMono-Regular, "Cascadia Code", Menlo, Consolas, monospace; font-size: .86em; background: var(--code-bg); padding: .12em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: .84rem; }
+pre code.hljs { background: none; padding: 0; }
+pre.mermaid { background: var(--bg); text-align: center; }
+.table-wrap { overflow-x: auto; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { padding: .55rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--bg-soft); }
+li.task { list-style: none; margin-left: -1.4rem; }
+li.task input { margin-right: .45rem; accent-color: var(--ok); }
+.page-footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between; }
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding: 1rem; }
+  .toc { display: none; }
+  main { padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; }
+}
+@media print {
+  .sidebar, .skip-link, .headerlink { display: none; }
+  .layout { display: block; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<div class="layout">
+  <aside class="sidebar" aria-label="Navegación de la documentación">
+    <a class="brand" href="../index.html">🏆 Leaderboard API</a>
+    <p class="brand-sub">Documentación de diseño</p>
+    <nav class="nav" aria-label="Documentos">
+      <h2>Diseño</h2>
+      <ul>
+        <li><a href="../index.html">Inicio<small>Índice de la documentación</small></a></li>
+        <li><a href="../requirements.html">Requerimientos<small>RF, RNF e historias de usuario</small></a></li>
+        <li><a href="../architecture.html">Arquitectura<small>Capas, datos, endpoints y seguridad</small></a></li>
+        <li><a href="../roadmap-and-tasks.html">Roadmap y tareas<small>Fases Noviembre → Marzo</small></a></li>
+        <li><a href="../coding-standards.html">Estándares de código<small>Convenciones, patrones y testing</small></a></li>
+      </ul>
+      <h2>Resultados</h2>
+      <ul>
+        <li><a href="../performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+      </ul>
+      <h2>Decisiones (ADR)</h2>
+      <ul>
+        <li><a href="../adr/0001-postgresql.html">ADR-001 · PostgreSQL<small>Almacén principal</small></a></li>
+        <li><a href="../adr/0002-clean-architecture.html">ADR-002 · Clean Architecture<small>Estructura en capas</small></a></li>
+        <li><a href="../adr/0003-anti-cheat.html" aria-current="page">ADR-003 · Anti-cheat<small>HMAC, nonce, rate limiting</small></a></li>
+        <li><a href="../adr/0004-future-improvements.html">ADR-004 · Mejoras futuras<small>Redis, tiempo real, microservicios</small></a></li>
+      </ul>
+    </nav>
+    <nav class="toc" aria-label="En esta página">
+      <h2>En esta página</h2>
+<div class="toc">
+<ul>
+<li><a href="#contexto">Contexto</a></li>
+<li><a href="#decision">Decisión</a></li>
+<li><a href="#alternativas-consideradas">Alternativas consideradas</a></li>
+<li><a href="#consecuencias">Consecuencias</a></li>
+<li><a href="#validacion">Validación</a></li>
+</ul>
+</div>
+
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button">◐ Cambiar tema</button>
+  </aside>
+  <main id="main">
+    <article class="content">
+<h1 id="adr-003-estrategia-anti-cheat-para-el-envio-de-puntuaciones">ADR-003 · Estrategia anti-cheat para el envío de puntuaciones<a class="headerlink" href="#adr-003-estrategia-anti-cheat-para-el-envio-de-puntuaciones" title="Enlace a esta sección">#</a></h1>
+<blockquote>
+<p><strong>Estado:</strong> Aceptado · <strong>Fecha:</strong> 2027-01 · <strong>Decisores:</strong> autora del proyecto<br />
+<strong>Relacionados:</strong> <a href="../architecture.html#5-estrategia-de-seguridad">Arquitectura §5</a> · <a href="../requirements.html#24-anti-cheat-y-moderacion">Requerimientos RF-29…RF-33</a></p>
+</blockquote>
+<h2 id="contexto">Contexto<a class="headerlink" href="#contexto" title="Enlace a esta sección">#</a></h2>
+<p>Un leaderboard solo tiene valor si sus puntuaciones son creíbles. Amenazas principales:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Amenaza</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Falsificación</strong></td>
+<td>Un jugador descubre el endpoint y envía <code>value: 999999</code>.</td>
+</tr>
+<tr>
+<td><strong>Robo de credencial</strong></td>
+<td>La API Key aparece en logs de un proxy o en un binario del cliente.</td>
+</tr>
+<tr>
+<td><strong>Replay</strong></td>
+<td>Se captura una petición válida y se reenvía para inflar estadísticas.</td>
+</tr>
+<tr>
+<td><strong>Manipulación en tránsito</strong></td>
+<td>Se altera <code>value</code> en una petición legítima.</td>
+</tr>
+<tr>
+<td><strong>Inundación</strong></td>
+<td>Un servidor comprometido envía miles de puntuaciones por minuto.</td>
+</tr>
+<tr>
+<td><strong>Valores imposibles</strong></td>
+<td>Puntuaciones fuera de lo que el juego permite.</td>
+</tr>
+</tbody>
+</table></div>
+<p>Supuesto clave: <strong>los servidores de juego son autoritativos</strong>. El cliente del jugador nunca envía puntuaciones; si el propio servidor está comprometido, ninguna medida de canal lo evita (para eso está la moderación).</p>
+<h2 id="decision">Decisión<a class="headerlink" href="#decision" title="Enlace a esta sección">#</a></h2>
+<p>Defensa en profundidad con cinco capas:</p>
+<ol>
+<li><strong>API Key por juego + firma HMAC-SHA256</strong> de cada petición.
+   - Cabeceras: <code>X-Api-Key</code> (id público <code>lbk_…</code>), <code>X-Timestamp</code>, <code>X-Nonce</code>, <code>X-Signature</code>.
+   - <code>signature = Base64(HMAC-SHA256(secret, METHOD\nPATH\nTIMESTAMP\nNONCE\nhex(SHA256(body))))</code>.
+   - El <strong>secreto nunca viaja</strong>; se guarda cifrado con ASP.NET Core Data Protection (debe ser recuperable para recalcular la firma) y se compara con <code>CryptographicOperations.FixedTimeEquals</code>.</li>
+<li><strong>Frescura + unicidad</strong>: ventana de ±300 s para el timestamp y <code>UNIQUE (api_key_id, nonce)</code> en base de datos. Un reenvío idéntico devuelve el resultado original (<code>200</code>, idempotente); el mismo nonce con otro cuerpo devuelve <code>409 score.nonce_reused</code>.</li>
+<li><strong>Rate limiting</strong>: <em>token bucket</em> por API Key (60/min, ráfaga 20) en el middleware nativo, más un límite por jugador y juego (10/min) en el caso de uso.</li>
+<li><strong>Plausibilidad</strong>: <code>minScore</code>/<code>maxScore</code> por juego → <code>422 score.out_of_range</code>.</li>
+<li><strong>Moderación y auditoría</strong>: histórico inmutable de puntuaciones; un administrador puede invalidar una puntuación y la mejor marca se recalcula desde el histórico. Los rechazos se registran (<code>Rejected game-server request with key {KeyId}: {ErrorCode}</code>) sin datos sensibles.</li>
+</ol>
+<h2 id="alternativas-consideradas">Alternativas consideradas<a class="headerlink" href="#alternativas-consideradas" title="Enlace a esta sección">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Alternativa</th>
+<th>Por qué no (o no solo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>API Key en claro en cabecera</strong></td>
+<td>Una sola filtración permite enviar puntuaciones arbitrarias indefinidamente y no protege la integridad del cuerpo.</td>
+</tr>
+<tr>
+<td><strong>JWT de servidor (client credentials)</strong></td>
+<td>Protege la identidad pero no la integridad del cuerpo ni el replay dentro de la vida del token; requiere un endpoint de emisión de tokens adicional. Válido como evolución si hay muchos consumidores.</td>
+</tr>
+<tr>
+<td><strong>mTLS</strong></td>
+<td>Máxima seguridad de canal, pero gestión de certificados desproporcionada para un proyecto de portafolio y difícil de demostrar en Swagger.</td>
+</tr>
+<tr>
+<td><strong>Firma asimétrica (Ed25519)</strong></td>
+<td>El servidor no necesitaría guardar secretos recuperables. Más compleja para los integradores; se deja como mejora si se exige no almacenar secretos.</td>
+</tr>
+<tr>
+<td><strong>Detección estadística (z-score, p99)</strong></td>
+<td>Útil, pero requiere datos históricos y ajuste; se registra como mejora futura (<code>PendingReview</code> ya existe en el modelo).</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="consecuencias">Consecuencias<a class="headerlink" href="#consecuencias" title="Enlace a esta sección">#</a></h2>
+<p><strong>Positivas</strong></p>
+<ul>
+<li>Capturar una petición solo permite reenviarla durante 5 minutos, y ese reenvío es inocuo (idempotente).</li>
+<li>Alterar el cuerpo invalida la firma (<code>401 apikey.invalid_signature</code>).</li>
+<li>Rotación sin downtime: hasta 5 claves activas por juego.</li>
+<li>Swagger sigue siendo usable: en Development la UI firma las peticiones en el navegador con WebCrypto (<code>wwwroot/swagger-hmac.js</code>); el secreto no se envía al servidor.</li>
+</ul>
+<p><strong>Negativas / riesgos aceptados</strong></p>
+<ul>
+<li>El secreto se almacena <strong>cifrado, no hasheado</strong>: si se filtran a la vez la base de datos y el <em>key ring</em> de Data Protection, las claves quedan expuestas. Mitigación: key ring en volumen separado (en producción, Key Vault) y revocación inmediata.</li>
+<li>Los límites de frecuencia son <strong>por instancia</strong> (en memoria). Con varias réplicas harían falta límites distribuidos (Redis) — ADR-004.</li>
+<li>Un servidor de juego comprometido puede enviar puntuaciones plausibles; solo la moderación lo corrige.</li>
+</ul>
+<h2 id="validacion">Validación<a class="headerlink" href="#validacion" title="Enlace a esta sección">#</a></h2>
+<p>Tests de integración: firma alterada, cuerpo alterado, timestamp caducado, cabeceras ausentes, clave revocada, clave de otro juego (<code>403</code>), JWT de jugador rechazado, replay idempotente, nonce reutilizado (<code>409</code>), límite por jugador (<code>429</code>) y rate limiting con <code>Retry-After</code>. Tests unitarios del autenticador con <code>FakeTimeProvider</code> para los bordes de la ventana.</p>
+    </article>
+    <footer class="page-footer">
+      <span>Generado desde <a href="0003-anti-cheat.md"><code>docs/adr/0003-anti-cheat.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try { var saved = localStorage.getItem('docs-theme'); if (saved) root.dataset.theme = saved; } catch (e) {}
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.addEventListener('click', function () {
+      var dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                    : matchMedia('(prefers-color-scheme: dark)').matches;
+      root.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('docs-theme', root.dataset.theme); } catch (e) {}
+      location.reload(); // re-render Mermaid with the matching theme
+    });
+  })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/gherkin.min.js"></script>
+<script>
+  if (window.hljs) document.querySelectorAll('pre code[class*="language-"]').forEach(function (el) { hljs.highlightElement(el); });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark'
+                                  : matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+
+</body>
+</html>

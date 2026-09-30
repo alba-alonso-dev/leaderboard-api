@@ -1,0 +1,64 @@
+# Requests for the VS Code REST Client / Visual Studio / Rider HTTP client.
+# Run them top to bottom: each one captures the values the next ones need.
+# Score submission needs an HMAC signature: use Swagger UI (it signs in the browser)
+# or samples/submit-score.sh / samples/submit-score.ps1 with the keyId and secret below.
+
+@baseUrl = http://localhost:8080/api/v1
+@password = Sup3rSecret-Demo1
+
+### Register a player
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{ "username": "demo_player", "email": "demo@example.com", "password": "{{password}}" }
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "demo@example.com", "password": "{{password}}" }
+
+@token = {{login.response.body.$.accessToken}}
+@playerId = {{register.response.body.$.id}}
+
+### My profile
+GET {{baseUrl}}/players/me
+Authorization: Bearer {{token}}
+
+### Create a game
+# @name game
+POST {{baseUrl}}/games
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Demo Blaster", "slug": "demo-blaster", "scoreOrder": "HigherIsBetter", "minScore": 0, "maxScore": 1000000 }
+
+@gameId = {{game.response.body.$.id}}
+
+### Issue an API key (copy keyId and secret: the secret is shown only once)
+POST {{baseUrl}}/games/{{gameId}}/api-keys
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "demo-server" }
+
+### Now submit a score, e.g.:
+###   ./samples/submit-score.sh {{gameId}} <keyId> <secret> {{playerId}} 4200
+
+### Top 10
+GET {{baseUrl}}/games/{{gameId}}/leaderboard/top?n=10
+
+### Ranking page
+GET {{baseUrl}}/games/{{gameId}}/leaderboard?page=1&pageSize=20
+
+### Absolute position
+GET {{baseUrl}}/games/{{gameId}}/leaderboard/players/{{playerId}}
+
+### Relative position (5 above and below)
+GET {{baseUrl}}/games/{{gameId}}/leaderboard/players/{{playerId}}/around?range=5
+
+### My position
+GET {{baseUrl}}/games/{{gameId}}/leaderboard/me
+Authorization: Bearer {{token}}

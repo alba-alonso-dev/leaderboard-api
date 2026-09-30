@@ -87,6 +87,18 @@ public sealed class GameTests
         game.ScoreOrder.ShouldBe(ScoreOrder.LowerIsBetter);
     }
 
+    [Theory]
+    [InlineData(ScoreOrder.HigherIsBetter, 1_001, 100, 10, true)]   // > 10x better
+    [InlineData(ScoreOrder.HigherIsBetter, 1_000, 100, 10, false)]  // exactly 10x is allowed
+    [InlineData(ScoreOrder.HigherIsBetter, 50, 100, 10, false)]     // worse score: never suspicious
+    [InlineData(ScoreOrder.HigherIsBetter, 1_000_000, 0, 10, false)] // no positive baseline
+    [InlineData(ScoreOrder.HigherIsBetter, 1_000_000, 100, 0, false)] // disabled
+    [InlineData(ScoreOrder.LowerIsBetter, 5_000, 60_000, 10, true)] // 12x faster
+    [InlineData(ScoreOrder.LowerIsBetter, 6_000, 60_000, 10, false)]
+    [InlineData(ScoreOrder.LowerIsBetter, 0, 60_000, 10, false)]   // non-positive values are out of scope
+    public void IsSuspiciousImprovement_FlagsImplausibleJumps(ScoreOrder order, long candidate, long best, double factor, bool expected) =>
+        CreateGame(order).IsSuspiciousImprovement(candidate, best, factor).ShouldBe(expected);
+
     [Fact]
     public void IsOwnedBy_OnlyForOwner()
     {

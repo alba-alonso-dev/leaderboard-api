@@ -194,7 +194,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
    - El <strong>secreto nunca viaja</strong>; se guarda cifrado con ASP.NET Core Data Protection (debe ser recuperable para recalcular la firma) y se compara con <code>CryptographicOperations.FixedTimeEquals</code>.</li>
 <li><strong>Frescura + unicidad</strong>: ventana de ±300 s para el timestamp y <code>UNIQUE (api_key_id, nonce)</code> en base de datos. Un reenvío idéntico devuelve el resultado original (<code>200</code>, idempotente); el mismo nonce con otro cuerpo devuelve <code>409 score.nonce_reused</code>.</li>
 <li><strong>Rate limiting</strong>: <em>token bucket</em> por API Key (60/min, ráfaga 20) en el middleware nativo, más un límite por jugador y juego (10/min) en el caso de uso.</li>
-<li><strong>Plausibilidad</strong>: <code>minScore</code>/<code>maxScore</code> por juego → <code>422 score.out_of_range</code>.</li>
+<li><strong>Plausibilidad</strong>: <code>minScore</code>/<code>maxScore</code> por juego → <code>422 score.out_of_range</code>; y un nuevo récord personal más de 10× mejor que el anterior (configurable en <code>Scores:MaxImprovementFactor</code>) se guarda como <code>PendingReview</code> (<code>202</code>) sin entrar en el ranking hasta que un administrador lo aprueba (<code>POST /api/v1/admin/scores/{id}/approve</code>) o lo invalida.</li>
 <li><strong>Moderación y auditoría</strong>: histórico inmutable de puntuaciones; un administrador puede invalidar una puntuación y la mejor marca se recalcula desde el histórico. Los rechazos se registran (<code>Rejected game-server request with key {KeyId}: {ErrorCode}</code>) sin datos sensibles.</li>
 </ol>
 <h2 id="alternativas-consideradas">Alternativas consideradas<a class="headerlink" href="#alternativas-consideradas" title="Enlace a esta sección">#</a></h2>
@@ -224,7 +224,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 </tr>
 <tr>
 <td><strong>Detección estadística (z-score, p99)</strong></td>
-<td>Útil, pero requiere datos históricos y ajuste; se registra como mejora futura (<code>PendingReview</code> ya existe en el modelo).</td>
+<td>Útil, pero requiere datos históricos y ajuste. En 1.0 se implementa una heurística simple y explicable (salto relativo sobre el récord personal) que alimenta la misma cola <code>PendingReview</code>; la versión estadística queda como mejora futura (ADR-004).</td>
 </tr>
 </tbody>
 </table></div>

@@ -1,6 +1,6 @@
 # Roadmap y Plan de Tareas
 
-> **Documento:** `docs/roadmap-and-tasks.md` · **Estado:** Fases 1–5 implementadas (quedan tareas de publicación marcadas como pendientes) · **Versión:** 1.0  
+> **Documento:** `docs/roadmap-and-tasks.md` · **Estado:** Fases 1–5 implementadas y fusionadas en `main` (quedan tareas de publicación en GitHub) · **Versión:** 1.0  
 > **Relacionados:** [Requerimientos](requirements.md) · [Arquitectura](architecture.md) · [Estándares de código](coding-standards.md)
 
 ## 1. Visión temporal
@@ -127,7 +127,7 @@ gantt
 
 ### 4.6 Cierre de fase
 
-- [ ] **N-32** (S) Colección `.http` (`Leaderboard.Api.http`) con el flujo completo de demo — *sustituido por Swagger UI con firma en el navegador y `samples/submit-score.sh`*
+- [x] **N-32** (S) Colección `.http` (`src/Leaderboard.Api/Leaderboard.Api.http`) con el flujo de demo (el envío firmado se hace con Swagger UI o `samples/`)
 - [x] **N-33** (S) README: sección «Cómo ejecutar» (versión provisional con `dotnet run`)
 - [ ] **N-34** (S) Tag `v0.1.0` + nota de release — *pendiente: etiquetar al fusionar en `main`*
 
@@ -195,7 +195,7 @@ gantt
 - [x] **E-08** (L) `ApiKeyHmacAuthenticationHandler`: cadena canónica, ventana ±300 s, `FixedTimeEquals`; flag `ApiKeys:AllowPlainSecret`
 - [x] **E-09** (M) Idempotencia por `UNIQUE(api_key_id, nonce)`: reintento → `200` con resultado original (RF-29)
 - [x] **E-10** (S) Límite de 5 claves activas por juego (RF-16)
-- [ ] **E-11** (S) Script/cliente de ejemplo (`samples/sign-request.ps1` y `.sh`) que firma peticiones para probar desde terminal — *parcial: `samples/submit-score.sh` (bash); falta la variante PowerShell*
+- [x] **E-11** (S) Scripts de ejemplo que firman peticiones: `samples/submit-score.sh` (bash + openssl) y `samples/submit-score.ps1` (PowerShell 7)
 - [x] **E-12** (M) Tests de integración HMAC: firma alterada, cuerpo alterado, timestamp caducado, replay, clave revocada
 
 ### 6.3 ADRs
@@ -218,7 +218,7 @@ gantt
 - [x] **F-02** (S) `.dockerignore` (bin/obj, tests, docs, `.git`)
 - [x] **F-03** (M) `compose.yaml`: `api` + `postgres:18-alpine`, `healthcheck` con `pg_isready`, `depends_on: service_healthy`, volúmenes `pgdata` (montado en `/var/lib/postgresql`, nuevo layout de la imagen oficial desde PG 18) y `dp-keys`, `.env.example`
 - [x] **F-04** (S) Swagger accesible en `http://localhost:8080/swagger` con `ASPNETCORE_ENVIRONMENT=Development` en Compose
-- [ ] **F-05** (S) `compose.override.yaml` opcional con pgAdmin / puertos de debug — *pendiente (opcional)*
+- [x] **F-05** (S) pgAdmin opcional con servidor preconfigurado: `docker compose --profile tools up -d` → `http://localhost:5050`
 - [ ] **F-06** (S) Verificar el criterio de aceptación desde un clon limpio en otra máquina/VM — *pendiente: lo cubre el job `docker` del CI en cada PR; falta la verificación manual en otra máquina*
 
 ### 7.2 Integración continua
@@ -258,7 +258,7 @@ gantt
 - [x] **M-09** (M) Políticas `auth`, `score-submit` (particionada por `api_key_id`) y `public-read` (por IP); `OnRejected` → ProblemDetails `429` + `Retry-After`
 - [x] **M-10** (S) Límites configurables por `appsettings` (`RateLimiting:*`) y desactivables en tests
 - [x] **M-11** (M) Límite por jugador y juego (10 envíos/min) en el caso de uso
-- [ ] **M-12** (M) Heurística de plausibilidad → `ScoreStatus.PendingReview` (RF-32) *(Could)* — *pendiente (Could): ver ADR-004*
+- [x] **M-12** (M) Heurística de plausibilidad → `ScoreStatus.PendingReview` (RF-32): mejora > 10× sobre el récord personal; cola `GET /admin/scores` y `POST /admin/scores/{id}/approve`
 - [x] **M-13** (M) `DELETE /admin/scores/{id}` + recálculo de *leaderboard entry* (RF-33) *(Could)*
 - [x] **M-14** (S) Tests de integración de `429` y de cabecera `Retry-After`
 

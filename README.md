@@ -6,7 +6,7 @@
 ![.NET 10 LTS](https://img.shields.io/badge/.NET-10%20LTS-512BD4?logo=dotnet)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-180-success)
+![Tests](https://img.shields.io/badge/tests-197-success)
 ![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -28,10 +28,10 @@ Es un proyecto de portafolio que muestra, en un dominio pequeño y fácil de ent
 |---|---|
 | **Diseño de API** | Contrato REST versionado (`/api/v1`), paginación, validación con FluentValidation, errores **RFC 9457 ProblemDetails** con `code` estable y `traceId`, `ETag`/`If-Match`. |
 | **Arquitectura** | **Clean Architecture** (Domain · Application · Infrastructure · Api) con CQRS liviano sin mediador; límites verificados por **tests de arquitectura**. |
-| **Seguridad** | **JWT** con refresh tokens rotatorios y detección de robo para jugadores; **API Key + firma HMAC-SHA256** con anti-replay idempotente para servidores de juego; secretos cifrados con Data Protection; controles OWASP API Top 10. |
+| **Seguridad** | **JWT** con refresh tokens rotatorios y detección de robo para jugadores; **API Key + firma HMAC-SHA256** con anti-replay idempotente para servidores de juego; secretos cifrados con Data Protection; puntuaciones sospechosas retenidas para moderación; controles OWASP API Top 10. |
 | **Datos** | Histórico inmutable + proyección de mejor marca en **PostgreSQL**; upsert atómico `ON CONFLICT`; índice cubriente con búsquedas *keyset* por tupla. |
 | **Rendimiento medido** | Benchmark **k6** con 100 000 jugadores: p95 < 50 ms en todas las lecturas tras diagnosticar y rediseñar el índice ([informe](docs/performance.md)). |
-| **Calidad** | 180 tests: unitarios, integración con `WebApplicationFactory` + **Testcontainers** (PostgreSQL real) y arquitectura. Cobertura ≥ 96 % con umbral en CI. |
+| **Calidad** | 197 tests: unitarios, integración con `WebApplicationFactory` + **Testcontainers** (PostgreSQL real) y arquitectura. Cobertura ≥ 96 % con umbral en CI. |
 | **Operación** | **Docker** (imagen *chiseled* no root) + **Compose**, **GitHub Actions**, **Serilog** JSON con correlación de `traceId`, health checks, **rate limiting** nativo. |
 | **Ingeniería** | Requisitos trazables a tareas y tests, y 4 **ADRs** con alternativas y consecuencias. |
 
@@ -81,7 +81,7 @@ src/
 tests/                           Domain/Application unit tests · Api integration tests · Architecture tests
 docs/                            Requisitos, arquitectura, roadmap, estándares, rendimiento, ADRs (MD + HTML)
 perf/                            Script k6 y seed de 100 000 jugadores
-samples/submit-score.sh          Cliente de referencia que firma envíos (bash + openssl)
+samples/                         Clientes de referencia que firman envíos (bash + openssl, PowerShell 7)
 scripts/                         Smoke test E2E, generador de documentación, gate de cobertura
 ```
 
@@ -93,16 +93,16 @@ scripts/                         Smoke test E2E, generador de documentación, ga
 | `POST` | `/api/v1/games` | JWT | Registrar un juego (el usuario pasa a ser propietario) |
 | `PUT` · `DELETE` | `/api/v1/games/{gameId}` | JWT (owner) | Actualizar con `If-Match` · archivar |
 | `POST` | `/api/v1/games/{gameId}/api-keys` | JWT (owner) | Emitir credenciales para el servidor del juego (secreto visible una vez) |
-| `POST` | `/api/v1/games/{gameId}/scores` | API Key + HMAC | Enviar una puntuación (idempotente por nonce) |
+| `POST` | `/api/v1/games/{gameId}/scores` | API Key + HMAC | Enviar una puntuación (idempotente por nonce; `202` si queda en revisión) |
 | `GET` | `/api/v1/games/{gameId}/leaderboard/top?n=10` | — | Top N |
 | `GET` | `/api/v1/games/{gameId}/leaderboard?page=1&pageSize=20` | — | Ranking paginado |
 | `GET` | `/api/v1/games/{gameId}/leaderboard/players/{playerId}` | — | Posición absoluta y percentil |
 | `GET` | `/api/v1/games/{gameId}/leaderboard/players/{playerId}/around?range=5` | — | Jugadores por encima y por debajo |
 | `GET` | `/api/v1/games/{gameId}/leaderboard/me` | JWT | Mi posición |
-| `DELETE` | `/api/v1/admin/scores/{scoreId}` | JWT (admin) | Moderación: invalida y recalcula |
+| `GET` · `POST` · `DELETE` | `/api/v1/admin/scores` · `/{scoreId}/approve` · `/{scoreId}` | JWT (admin) | Moderación: cola de revisión, aprobar, invalidar y recalcular |
 | `GET` | `/health/live` · `/health/ready` | — | Health checks |
 
-Catálogo completo (23 endpoints), payloads y códigos de error: [architecture.md §4](docs/architecture.md#4-diseño-de-endpoints-restful).
+Catálogo completo (25 endpoints), payloads y códigos de error: [architecture.md §4](docs/architecture.md#4-diseño-de-endpoints-restful).
 
 ## Inicio rápido
 
@@ -116,6 +116,8 @@ docker compose down                # parar (añade -v para borrar los datos)
 
 Todas las variables tienen valores de desarrollo; para cambiarlos copia [`.env.example`](.env.example) a `.env`.
 
+pgAdmin opcional, con la base de datos ya registrada: `docker compose --profile tools up -d` → `http://localhost:5050`.
+
 ### Recorrido en Swagger (`http://localhost:8080/swagger`)
 
 1. `POST /api/v1/auth/register` y `POST /api/v1/auth/login` → copia `accessToken`.
@@ -125,7 +127,14 @@ Todas las variables tienen valores de desarrollo; para cambiarlos copia [`.env.e
 5. `POST /api/v1/games/{gameId}/scores` con `{"playerId": "<tu id>", "value": 4200}`.
 6. `GET /api/v1/games/{gameId}/leaderboard/top` y `…/players/{playerId}/around`.
 
-Desde terminal, el mismo envío firmado: `./samples/submit-score.sh <gameId> <keyId> <secret> <playerId> 4200`.
+Desde terminal, el mismo envío firmado:
+
+```bash
+./samples/submit-score.sh <gameId> <keyId> <secret> <playerId> 4200
+pwsh ./samples/submit-score.ps1 -GameId <gameId> -KeyId <keyId> -Secret <secret> -PlayerId <playerId> -Value 4200
+```
+
+Un nuevo récord más de 10 veces mejor que el anterior se guarda como `PendingReview` (`202`) y no entra en el ranking hasta que un administrador lo aprueba en `POST /api/v1/admin/scores/{scoreId}/approve`. En [`src/Leaderboard.Api/Leaderboard.Api.http`](src/Leaderboard.Api/Leaderboard.Api.http) está el recorrido para el cliente HTTP del IDE.
 
 **Administrador de demo** (moderación): `admin@leaderboard.local` / `Admin-dev-Passw0rd` (configurable con `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
 
@@ -139,15 +148,15 @@ dotnet run --project src/Leaderboard.Api       # http://localhost:8080/swagger (
 ## Tests y calidad
 
 ```bash
-dotnet test                                    # 180 tests (integración con Testcontainers: requiere Docker)
+dotnet test                                    # 197 tests (integración con Testcontainers: requiere Docker)
 dotnet format --verify-no-changes              # estilo (.editorconfig)
 ```
 
 | Suite | Tests | Qué cubre |
 |---|---:|---|
-| `Leaderboard.Domain.UnitTests` | 32 | Normalización de `rank_key`, rango permitido, archivado, rotación de refresh tokens |
-| `Leaderboard.Application.UnitTests` | 64 | Validadores, autenticador HMAC (`FakeTimeProvider`), handlers de auth y envío (replay, nonce reutilizado, límites) |
-| `Leaderboard.Api.IntegrationTests` | 73 | HTTP extremo a extremo contra PostgreSQL 18 real: BOLA, `If-Match`, HMAC manipulado/caducado, concurrencia, ranking y desempates, moderación, ProblemDetails, OpenAPI, caída de BD, rate limiting, correlación log ↔ `traceId` |
+| `Leaderboard.Domain.UnitTests` | 43 | Normalización de `rank_key`, rango permitido, heurística de plausibilidad, estados de moderación, rotación de refresh tokens |
+| `Leaderboard.Application.UnitTests` | 65 | Validadores, autenticador HMAC (`FakeTimeProvider`), handlers de auth y envío (replay, nonce reutilizado, límites) |
+| `Leaderboard.Api.IntegrationTests` | 78 | HTTP extremo a extremo contra PostgreSQL 18 real: BOLA, `If-Match`, HMAC manipulado/caducado, concurrencia, ranking y desempates, moderación y cola de revisión, ProblemDetails, OpenAPI, caída de BD, rate limiting, correlación log ↔ `traceId` |
 | `Leaderboard.ArchitectureTests` | 11 | Regla de dependencias, handlers `sealed internal`, un handler por caso de uso, dominio sin setters públicos |
 
 Cobertura de líneas: Domain 98 % · Application 96,5 % · Infrastructure 99,4 % · Api 97,9 %.
@@ -189,7 +198,7 @@ La primera medición no cumplía el objetivo. `EXPLAIN ANALYZE` mostró joins so
 | Febrero | **4 · DevOps** | Dockerfile, Docker Compose con PostgreSQL, CI en GitHub Actions | ✅ |
 | Marzo | **5 · Producción** | Serilog estructurado, health checks, rate limiting, benchmark, ADR-004 | ✅ |
 
-Pendiente: publicar tags/releases y activar la protección de rama en GitHub, y la heurística de plausibilidad RF-32 (*Could*). Detalle en [docs/roadmap-and-tasks.md](docs/roadmap-and-tasks.md).
+Pendiente: publicar tags/releases y activar la protección de rama en GitHub. Detalle en [docs/roadmap-and-tasks.md](docs/roadmap-and-tasks.md).
 
 ## Documentación
 

@@ -76,6 +76,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             ["Swagger:Enabled"] = "true",
             ["RateLimiting:Enabled"] = "false",
             ["Scores:MaxPerPlayerPerMinute"] = "0",
+            ["Scores:MaxImprovementFactor"] = "0", // enabled only in PlausibilityTests
             ["Seed:Admin:Email"] = AdminEmail,
             ["Seed:Admin:Password"] = AdminPassword,
             ["Serilog:MinimumLevel:Default"] = "Warning",

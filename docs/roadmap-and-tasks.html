@@ -179,7 +179,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
     <article class="content">
 <h1 id="roadmap-y-plan-de-tareas">Roadmap y Plan de Tareas<a class="headerlink" href="#roadmap-y-plan-de-tareas" title="Enlace a esta sección">#</a></h1>
 <blockquote>
-<p><strong>Documento:</strong> <code>docs/roadmap-and-tasks.md</code> · <strong>Estado:</strong> Fases 1–5 implementadas (quedan tareas de publicación marcadas como pendientes) · <strong>Versión:</strong> 1.0<br />
+<p><strong>Documento:</strong> <code>docs/roadmap-and-tasks.md</code> · <strong>Estado:</strong> Fases 1–5 implementadas y fusionadas en <code>main</code> (quedan tareas de publicación en GitHub) · <strong>Versión:</strong> 1.0<br />
 <strong>Relacionados:</strong> <a href="requirements.html">Requerimientos</a> · <a href="architecture.html">Arquitectura</a> · <a href="coding-standards.html">Estándares de código</a></p>
 </blockquote>
 <h2 id="1-vision-temporal">1. Visión temporal<a class="headerlink" href="#1-vision-temporal" title="Enlace a esta sección">#</a></h2>
@@ -345,7 +345,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 </ul>
 <h3 id="46-cierre-de-fase">4.6 Cierre de fase<a class="headerlink" href="#46-cierre-de-fase" title="Enlace a esta sección">#</a></h3>
 <ul>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-32</strong> (S) Colección <code>.http</code> (<code>Leaderboard.Api.http</code>) con el flujo completo de demo — <em>sustituido por Swagger UI con firma en el navegador y <code>samples/submit-score.sh</code></em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-32</strong> (S) Colección <code>.http</code> (<code>src/Leaderboard.Api/Leaderboard.Api.http</code>) con el flujo de demo (el envío firmado se hace con Swagger UI o <code>samples/</code>)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-33</strong> (S) README: sección «Cómo ejecutar» (versión provisional con <code>dotnet run</code>)</li>
 <li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-34</strong> (S) Tag <code>v0.1.0</code> + nota de release — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
 </ul>
@@ -405,7 +405,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-08</strong> (L) <code>ApiKeyHmacAuthenticationHandler</code>: cadena canónica, ventana ±300 s, <code>FixedTimeEquals</code>; flag <code>ApiKeys:AllowPlainSecret</code></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-09</strong> (M) Idempotencia por <code>UNIQUE(api_key_id, nonce)</code>: reintento → <code>200</code> con resultado original (RF-29)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-10</strong> (S) Límite de 5 claves activas por juego (RF-16)</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>E-11</strong> (S) Script/cliente de ejemplo (<code>samples/sign-request.ps1</code> y <code>.sh</code>) que firma peticiones para probar desde terminal — <em>parcial: <code>samples/submit-score.sh</code> (bash); falta la variante PowerShell</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-11</strong> (S) Scripts de ejemplo que firman peticiones: <code>samples/submit-score.sh</code> (bash + openssl) y <code>samples/submit-score.ps1</code> (PowerShell 7)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-12</strong> (M) Tests de integración HMAC: firma alterada, cuerpo alterado, timestamp caducado, replay, clave revocada</li>
 </ul>
 <h3 id="63-adrs">6.3 ADRs<a class="headerlink" href="#63-adrs" title="Enlace a esta sección">#</a></h3>
@@ -425,7 +425,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-02</strong> (S) <code>.dockerignore</code> (bin/obj, tests, docs, <code>.git</code>)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-03</strong> (M) <code>compose.yaml</code>: <code>api</code> + <code>postgres:18-alpine</code>, <code>healthcheck</code> con <code>pg_isready</code>, <code>depends_on: service_healthy</code>, volúmenes <code>pgdata</code> (montado en <code>/var/lib/postgresql</code>, nuevo layout de la imagen oficial desde PG 18) y <code>dp-keys</code>, <code>.env.example</code></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-04</strong> (S) Swagger accesible en <code>http://localhost:8080/swagger</code> con <code>ASPNETCORE_ENVIRONMENT=Development</code> en Compose</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-05</strong> (S) <code>compose.override.yaml</code> opcional con pgAdmin / puertos de debug — <em>pendiente (opcional)</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-05</strong> (S) pgAdmin opcional con servidor preconfigurado: <code>docker compose --profile tools up -d</code> → <code>http://localhost:5050</code></li>
 <li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-06</strong> (S) Verificar el criterio de aceptación desde un clon limpio en otra máquina/VM — <em>pendiente: lo cubre el job <code>docker</code> del CI en cada PR; falta la verificación manual en otra máquina</em></li>
 </ul>
 <h3 id="72-integracion-continua">7.2 Integración continua<a class="headerlink" href="#72-integracion-continua" title="Enlace a esta sección">#</a></h3>
@@ -462,7 +462,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-09</strong> (M) Políticas <code>auth</code>, <code>score-submit</code> (particionada por <code>api_key_id</code>) y <code>public-read</code> (por IP); <code>OnRejected</code> → ProblemDetails <code>429</code> + <code>Retry-After</code></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-10</strong> (S) Límites configurables por <code>appsettings</code> (<code>RateLimiting:*</code>) y desactivables en tests</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-11</strong> (M) Límite por jugador y juego (10 envíos/min) en el caso de uso</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>M-12</strong> (M) Heurística de plausibilidad → <code>ScoreStatus.PendingReview</code> (RF-32) <em>(Could)</em> — <em>pendiente (Could): ver ADR-004</em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-12</strong> (M) Heurística de plausibilidad → <code>ScoreStatus.PendingReview</code> (RF-32): mejora &gt; 10× sobre el récord personal; cola <code>GET /admin/scores</code> y <code>POST /admin/scores/{id}/approve</code></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-13</strong> (M) <code>DELETE /admin/scores/{id}</code> + recálculo de <em>leaderboard entry</em> (RF-33) <em>(Could)</em></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-14</strong> (S) Tests de integración de <code>429</code> y de cabecera <code>Retry-After</code></li>
 </ul>

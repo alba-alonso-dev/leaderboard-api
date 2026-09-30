@@ -207,9 +207,9 @@ public sealed class LeaderboardEndpoints : IEndpointGroup
 ```mermaid
 flowchart TB
     A["🔺 Smoke (CI · Docker Compose)<br/>health + swagger · 2-3 checks"]
-    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · 73 tests"]
-    C["Unitarios (Domain + Application)<br/>reglas, validadores, handlers con fakes · 96 tests"]
-    D["Arquitectura (NetArchTest)<br/>regla de dependencias, convenciones · 10 tests"]
+    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · 78 tests"]
+    C["Unitarios (Domain + Application)<br/>reglas, validadores, handlers con fakes · 108 tests"]
+    D["Arquitectura (NetArchTest)<br/>regla de dependencias, convenciones · 11 tests"]
     A --- B --- C
     C --- D
 ```

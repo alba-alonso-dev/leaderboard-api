@@ -28,7 +28,7 @@ Defensa en profundidad con cinco capas:
    - El **secreto nunca viaja**; se guarda cifrado con ASP.NET Core Data Protection (debe ser recuperable para recalcular la firma) y se compara con `CryptographicOperations.FixedTimeEquals`.
 2. **Frescura + unicidad**: ventana de ±300 s para el timestamp y `UNIQUE (api_key_id, nonce)` en base de datos. Un reenvío idéntico devuelve el resultado original (`200`, idempotente); el mismo nonce con otro cuerpo devuelve `409 score.nonce_reused`.
 3. **Rate limiting**: *token bucket* por API Key (60/min, ráfaga 20) en el middleware nativo, más un límite por jugador y juego (10/min) en el caso de uso.
-4. **Plausibilidad**: `minScore`/`maxScore` por juego → `422 score.out_of_range`.
+4. **Plausibilidad**: `minScore`/`maxScore` por juego → `422 score.out_of_range`; y un nuevo récord personal más de 10× mejor que el anterior (configurable en `Scores:MaxImprovementFactor`) se guarda como `PendingReview` (`202`) sin entrar en el ranking hasta que un administrador lo aprueba (`POST /api/v1/admin/scores/{id}/approve`) o lo invalida.
 5. **Moderación y auditoría**: histórico inmutable de puntuaciones; un administrador puede invalidar una puntuación y la mejor marca se recalcula desde el histórico. Los rechazos se registran (`Rejected game-server request with key {KeyId}: {ErrorCode}`) sin datos sensibles.
 
 ## Alternativas consideradas
@@ -39,7 +39,7 @@ Defensa en profundidad con cinco capas:
 | **JWT de servidor (client credentials)** | Protege la identidad pero no la integridad del cuerpo ni el replay dentro de la vida del token; requiere un endpoint de emisión de tokens adicional. Válido como evolución si hay muchos consumidores. |
 | **mTLS** | Máxima seguridad de canal, pero gestión de certificados desproporcionada para un proyecto de portafolio y difícil de demostrar en Swagger. |
 | **Firma asimétrica (Ed25519)** | El servidor no necesitaría guardar secretos recuperables. Más compleja para los integradores; se deja como mejora si se exige no almacenar secretos. |
-| **Detección estadística (z-score, p99)** | Útil, pero requiere datos históricos y ajuste; se registra como mejora futura (`PendingReview` ya existe en el modelo). |
+| **Detección estadística (z-score, p99)** | Útil, pero requiere datos históricos y ajuste. En 1.0 se implementa una heurística simple y explicable (salto relativo sobre el récord personal) que alimenta la misma cola `PendingReview`; la versión estadística queda como mejora futura (ADR-004). |
 
 ## Consecuencias
 

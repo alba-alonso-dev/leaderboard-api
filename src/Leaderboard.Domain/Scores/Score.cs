@@ -55,5 +55,28 @@ public sealed class Score
         return new Score(Guid.CreateVersion7(now), gameId, playerId, apiKeyId, value, nonce, metadata, now);
     }
 
+    /// <summary>Held for moderation before being persisted: it is stored but does not count for the leaderboard.</summary>
+    public void HoldForReview()
+    {
+        if (Status != ScoreStatus.Accepted)
+        {
+            throw new DomainException($"Only a new accepted score can be held for review (status: {Status}).");
+        }
+
+        Status = ScoreStatus.PendingReview;
+    }
+
+    /// <summary>A moderator confirms a held score; it then counts for the leaderboard.</summary>
+    public Result Approve()
+    {
+        if (Status != ScoreStatus.PendingReview)
+        {
+            return ScoreErrors.NotPending;
+        }
+
+        Status = ScoreStatus.Accepted;
+        return Result.Success();
+    }
+
     public void Reject() => Status = ScoreStatus.Rejected;
 }

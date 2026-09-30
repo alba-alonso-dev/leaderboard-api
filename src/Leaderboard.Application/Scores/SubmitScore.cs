@@ -93,6 +93,12 @@ internal sealed class SubmitScoreCommandHandler(
         }
 
         var score = Score.Submit(game.Id, command.PlayerId, command.ApiKeyId, command.Value, command.Nonce, command.Metadata, now);
+        var best = await scores.GetBestScoreAsync(game.Id, command.PlayerId, cancellationToken);
+        if (best is { } currentBest && game.IsSuspiciousImprovement(command.Value, currentBest, options.Value.MaxImprovementFactor))
+        {
+            score.HoldForReview(); // stored for moderation, not ranked (RF-32)
+        }
+
         try
         {
             await unitOfWork.ExecuteInTransactionAsync(
@@ -100,7 +106,11 @@ internal sealed class SubmitScoreCommandHandler(
                 {
                     scores.Add(score);
                     await unitOfWork.SaveChangesAsync(ct);
-                    await scores.UpsertLeaderboardEntryAsync(score, game.ToRankKey(score.Value), ct);
+                    if (score.Status == ScoreStatus.Accepted)
+                    {
+                        await scores.UpsertLeaderboardEntryAsync(score, game.ToRankKey(score.Value), ct);
+                    }
+
                     return true;
                 },
                 cancellationToken);
@@ -136,7 +146,7 @@ internal sealed class SubmitScoreCommandHandler(
             score.Value,
             score.Status,
             IsPersonalBest: ranked?.Row.ScoreId == score.Id,
-            BestScore: ranked?.Row.BestScore ?? score.Value,
+            BestScore: ranked?.Row.BestScore ?? (score.Status == ScoreStatus.Accepted ? score.Value : 0),
             Rank: ranked?.Rank ?? 0,
             TotalPlayers: total,
             isReplay);

@@ -307,17 +307,19 @@ WHERE game_id = @gameId
 | 12 | `POST` | `/api/v1/games/{gameId}/api-keys` | JWT · Owner | Emitir API Key | `201` | `401`, `404`, `409` |
 | 13 | `GET` | `/api/v1/games/{gameId}/api-keys` | JWT · Owner | Listar claves (sin secreto) | `200` | `401`, `404` |
 | 14 | `DELETE` | `/api/v1/games/{gameId}/api-keys/{apiKeyId}` | JWT · Owner | Revocar clave | `204` | `401`, `404` |
-| 15 | `POST` | `/api/v1/games/{gameId}/scores` | ApiKey+HMAC · RL `score-submit` | Enviar score | `201` / `200`¹ | `400`, `401`, `403`, `409`, `422`, `429` |
+| 15 | `POST` | `/api/v1/games/{gameId}/scores` | ApiKey+HMAC · RL `score-submit` | Enviar score | `201` / `202` / `200`¹ | `400`, `401`, `403`, `409`, `422`, `429` |
 | 16 | `GET` | `/api/v1/games/{gameId}/leaderboard?page=&pageSize=` | Anónimo · RL `public-read` | Ranking paginado | `200` | `400`, `404` |
 | 17 | `GET` | `/api/v1/games/{gameId}/leaderboard/top?n=10` | Anónimo · RL `public-read` | Top N | `200` | `400`, `404` |
 | 18 | `GET` | `/api/v1/games/{gameId}/leaderboard/players/{playerId}` | Anónimo · RL `public-read` | Posición absoluta | `200` | `404` |
 | 19 | `GET` | `/api/v1/games/{gameId}/leaderboard/players/{playerId}/around?range=5` | Anónimo · RL `public-read` | Posición relativa | `200` | `400`, `404` |
 | 20 | `GET` | `/api/v1/games/{gameId}/leaderboard/me` | JWT | Mi posición | `200` | `401`, `404` |
-| 21 | `DELETE` | `/api/v1/admin/scores/{scoreId}` | JWT · rol `admin` | Invalidar score (RF-33) | `204` | `401`, `403`, `404` |
+| 21 | `DELETE` | `/api/v1/admin/scores/{scoreId}` | JWT · rol `admin` | Invalidar score y recalcular la mejor marca (RF-33) | `204` | `401`, `403`, `404` |
 | 22 | `GET` | `/health/live` · `/health/ready` | Anónimo | Health checks | `200` | `503` |
 | 23 | `GET` | `/api/v1/players/{playerId}` | Anónimo · RL `public-read` | Perfil público (sin email) | `200` | `404` |
+| 24 | `GET` | `/api/v1/admin/scores?status=PendingReview&gameId=&page=&pageSize=` | JWT · rol `admin` | Cola de moderación, más antiguos primero (RF-32) | `200` | `400`, `401`, `403` |
+| 25 | `POST` | `/api/v1/admin/scores/{scoreId}/approve` | JWT · rol `admin` | Aprobar un score retenido: entra en el ranking (RF-32) | `204` | `401`, `403`, `404`, `409` |
 
-¹ `200 OK` cuando la petición es un reintento idempotente (mismo `nonce`) y se devuelve el resultado original.
+¹ `200 OK` cuando la petición es un reintento idempotente (mismo `nonce`) y se devuelve el resultado original; `202 Accepted` cuando el score queda retenido para revisión (`status: "PendingReview"`).
 
 ### 4.2 Payloads principales
 
@@ -449,6 +451,7 @@ Validación (`400`) añade `errors`:
 | 409 | `player.email_taken` · `player.username_taken` · `game.slug_taken` · `apikey.limit_reached` | Unicidad / límites |
 | 409 | `game.archived` | Envío a juego archivado (o emisión de clave) |
 | 409 | `score.nonce_reused` | Mismo nonce con un cuerpo distinto |
+| 409 | `score.not_pending` | Aprobar un score que no está en revisión |
 | 412 | `concurrency.conflict` | `If-Match` / `xmin` desactualizado |
 | 422 | `score.out_of_range` · `player.not_found_for_score` | Reglas de dominio |
 | 429 | `rate_limit.exceeded` | RateLimiter (+ `Retry-After`) |
@@ -544,7 +547,7 @@ sequenceDiagram
 | Canal | HTTPS + HMAC (integridad) + timestamp (frescura) + nonce (unicidad) | Ene |
 | Credencial | Claves por juego, múltiples activas, revocables, `last_used_at` para auditoría | Nov/Ene |
 | Frecuencia | `RateLimiter` *token bucket* por API Key (60/min, ráfaga 20) y ventana por jugador (10/min por juego) | Mar |
-| Plausibilidad | `min/max score` por juego (Nov); heurística de salto anómalo → `PendingReview` (Mar, *Could*) | Nov/Mar |
+| Plausibilidad | `min/max score` por juego → `422`; un nuevo récord más de 10× mejor que el anterior (`Scores:MaxImprovementFactor`) se guarda como `PendingReview` (`202`), no entra en el ranking y espera a un administrador | Nov/Mar |
 | Moderación | Admin invalida scores; recálculo del *leaderboard entry* desde el histórico | Mar |
 | Auditoría | Log estructurado de rechazos (`SecurityEvent=ScoreRejected`, `Reason`, `ApiKeyId`) | Mar |
 

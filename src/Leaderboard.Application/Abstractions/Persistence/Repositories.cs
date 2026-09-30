@@ -63,6 +63,12 @@ public interface IScoreRepository
 
     Task<int> CountSinceAsync(Guid gameId, Guid playerId, DateTimeOffset since, CancellationToken cancellationToken);
 
+    /// <summary>Current best score of the player in the game, or <c>null</c> if they have no ranked score yet.</summary>
+    Task<long?> GetBestScoreAsync(Guid gameId, Guid playerId, CancellationToken cancellationToken);
+
+    Task<PagedResult<Score>> ListByStatusAsync(
+        ScoreStatus status, Guid? gameId, int page, int pageSize, CancellationToken cancellationToken);
+
     Task<PagedResult<Score>> ListByPlayerAsync(Guid playerId, Guid? gameId, int page, int pageSize, CancellationToken cancellationToken);
 
     void Add(Score score);

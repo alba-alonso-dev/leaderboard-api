@@ -347,7 +347,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <ul>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-32</strong> (S) Colección <code>.http</code> (<code>src/Leaderboard.Api/Leaderboard.Api.http</code>) con el flujo de demo (el envío firmado se hace con Swagger UI o <code>samples/</code>)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>N-33</strong> (S) README: sección «Cómo ejecutar» (versión provisional con <code>dotnet run</code>)</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-34</strong> (S) Tag <code>v0.1.0</code> + nota de release — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>N-34</strong> (S) Tag <code>v0.1.0</code> + nota de release — <em>sustituido: la historia se publica como <code>v1.0.0</code> (workflow <code>release.yml</code>)</em></li>
 </ul>
 <p><strong>✅ Criterio de salida:</strong> desde Swagger se completa registro → login → crear juego → emitir clave → enviar 3 scores (con la clave) → Top N y posición correctos.</p>
 <hr />
@@ -384,7 +384,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-18</strong> (S) <code>GET /leaderboard/me</code> y <code>GET /players/me/scores</code> (RF-28)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-19</strong> (M) README extenso: arquitectura, decisiones, ejemplos <code>curl</code>, cómo ejecutar tests, badges</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>D-20</strong> (S) Informe de cobertura (ReportGenerator) y umbral objetivo documentado</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>D-21</strong> (S) Tag <code>v0.2.0</code> — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>D-21</strong> (S) Tag <code>v0.2.0</code> — <em>sustituido por <code>v1.0.0</code></em></li>
 </ul>
 <p><strong>✅ Criterio de salida:</strong> <code>dotnet test</code> verde en local; cobertura Domain+Application ≥ 70 % (objetivo final 80 %).</p>
 <hr />
@@ -414,7 +414,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-14</strong> (M) <code>docs/adr/0002-clean-architecture.md</code> — Clean vs Vertical Slice vs N-capas; coste/beneficio del refactor</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-15</strong> (M) <code>docs/adr/0003-anti-cheat.md</code> — API Key simple vs HMAC vs JWT de servidor vs mTLS; rate limiting; plausibilidad</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>E-16</strong> (S) Actualizar <code>docs/architecture.md</code> si alguna decisión cambió; regenerar HTML</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>E-17</strong> (S) Tag <code>v0.3.0</code> — <em>pendiente: etiquetar al fusionar en <code>main</code></em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>E-17</strong> (S) Tag <code>v0.3.0</code> — <em>sustituido por <code>v1.0.0</code></em></li>
 </ul>
 <p><strong>✅ Criterio de salida:</strong> 4 proyectos, tests de arquitectura verdes, todos los tests de Diciembre verdes sin modificar sus aserciones, 3 ADR publicados.</p>
 <hr />
@@ -438,7 +438,8 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-12</strong> (S) Job de seguridad: <code>dotnet list package --vulnerable --include-transitive</code> que falle ante vulnerabilidades <em>High</em></li>
 <li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-13</strong> (S) Dependabot (NuGet, GitHub Actions, Docker) + <em>branch protection</em> en <code>main</code> — <em>parcial: Dependabot configurado; la protección de rama se activa en los ajustes de GitHub</em></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-14</strong> (S) Job <code>docs</code>: regenerar HTML (<code>python scripts/build_docs.py</code>) y fallar si hay diferencias (<code>git diff --exit-code docs/</code>)</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-15</strong> (S) Badges de CI y cobertura en README; tag <code>v0.4.0</code> — <em>parcial: badge de CI añadido; falta el tag</em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-15</strong> (S) Badges de CI y cobertura en README; tag <code>v0.4.0</code> — <em>parcial: badges de CI y documentación; el tag se sustituye por <code>v1.0.0</code></em></li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-16</strong> (S) Publicación de <code>docs/</code> en GitHub Pages (<code>.github/workflows/pages.yml</code>)</li>
 </ul>
 <p><strong>✅ Criterio de salida:</strong> clon limpio → <code>docker compose up</code> → Swagger operativo; CI verde en <code>main</code> y en PRs.</p>
 <hr />
@@ -474,7 +475,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-18</strong> (S) <code>EXPLAIN ANALYZE</code> de consultas críticas documentado</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-19</strong> (M) ADR-004 «Mejoras futuras» (Redis Sorted Sets, SignalR, microservicios, OpenTelemetry, frontend)</li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>M-20</strong> (S) README final: GIF/captura de Swagger, sección «Qué aprendí / trade-offs», enlaces a ADR</li>
-<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>M-21</strong> (S) Release <code>v1.0.0</code> — <em>pendiente: release al fusionar en <code>main</code></em></li>
+<li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>M-21</strong> (S) Release <code>v1.0.0</code> — <em>automatizada: <code>.github/workflows/release.yml</code> la crea al subir el tag</em></li>
 </ul>
 <p><strong>✅ Criterio de salida (Definition of Done del proyecto):</strong> clonar → <code>docker compose up</code> → Swagger accesible para probar Auth + Score Submit + Ranking → pipeline de CI en verde.</p>
 <hr />

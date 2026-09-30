@@ -3,6 +3,7 @@
 **API de clasificaciones para videojuegos**: los servidores de juego envían puntuaciones firmadas y cualquier cliente consulta rankings, Top N y la posición absoluta o relativa de un jugador.
 
 [![CI](https://github.com/alba-alonso-dev/leaderboard-api/actions/workflows/ci.yml/badge.svg)](https://github.com/alba-alonso-dev/leaderboard-api/actions/workflows/ci.yml)
+[![Docs](https://github.com/alba-alonso-dev/leaderboard-api/actions/workflows/pages.yml/badge.svg)](https://alba-alonso-dev.github.io/leaderboard-api/)
 ![.NET 10 LTS](https://img.shields.io/badge/.NET-10%20LTS-512BD4?logo=dotnet)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
@@ -202,7 +203,7 @@ Pendiente: publicar tags/releases y activar la protección de rama en GitHub. De
 
 ## Documentación
 
-Toda la documentación está en Markdown (fuente) y en HTML navegable con diagramas renderizados ([docs/index.html](docs/index.html)).
+Toda la documentación está en Markdown (fuente) y en HTML navegable con diagramas renderizados, publicada en **[alba-alonso-dev.github.io/leaderboard-api](https://alba-alonso-dev.github.io/leaderboard-api/)**.
 
 | Documento | Markdown | HTML |
 |---|---|---|
@@ -223,7 +224,7 @@ python3 scripts/build_docs.py                            # regenera docs/**/*.ht
 python3 -m http.server 8000 -d docs                      # http://localhost:8000
 ```
 
-> Los HTML también pueden publicarse con **GitHub Pages** (Settings → Pages → *Deploy from branch* → `main` / `/docs`).
+> El workflow [`pages.yml`](.github/workflows/pages.yml) regenera y publica `docs/` en GitHub Pages en cada cambio de la documentación en `main`. Las versiones se publican con un tag (`git tag -a v1.0.0 -m "…" && git push origin v1.0.0`): [`release.yml`](.github/workflows/release.yml) crea la GitHub Release con las notas generadas.
 
 ## Fuera de alcance
 

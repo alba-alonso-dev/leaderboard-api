@@ -129,7 +129,7 @@ gantt
 
 - [x] **N-32** (S) Colección `.http` (`src/Leaderboard.Api/Leaderboard.Api.http`) con el flujo de demo (el envío firmado se hace con Swagger UI o `samples/`)
 - [x] **N-33** (S) README: sección «Cómo ejecutar» (versión provisional con `dotnet run`)
-- [ ] **N-34** (S) Tag `v0.1.0` + nota de release — *pendiente: etiquetar al fusionar en `main`*
+- [ ] **N-34** (S) Tag `v0.1.0` + nota de release — *sustituido: la historia se publica como `v1.0.0` (workflow `release.yml`)*
 
 **✅ Criterio de salida:** desde Swagger se completa registro → login → crear juego → emitir clave → enviar 3 scores (con la clave) → Top N y posición correctos.
 
@@ -170,7 +170,7 @@ gantt
 - [x] **D-18** (S) `GET /leaderboard/me` y `GET /players/me/scores` (RF-28)
 - [x] **D-19** (M) README extenso: arquitectura, decisiones, ejemplos `curl`, cómo ejecutar tests, badges
 - [x] **D-20** (S) Informe de cobertura (ReportGenerator) y umbral objetivo documentado
-- [ ] **D-21** (S) Tag `v0.2.0` — *pendiente: etiquetar al fusionar en `main`*
+- [ ] **D-21** (S) Tag `v0.2.0` — *sustituido por `v1.0.0`*
 
 **✅ Criterio de salida:** `dotnet test` verde en local; cobertura Domain+Application ≥ 70 % (objetivo final 80 %).
 
@@ -204,7 +204,7 @@ gantt
 - [x] **E-14** (M) `docs/adr/0002-clean-architecture.md` — Clean vs Vertical Slice vs N-capas; coste/beneficio del refactor
 - [x] **E-15** (M) `docs/adr/0003-anti-cheat.md` — API Key simple vs HMAC vs JWT de servidor vs mTLS; rate limiting; plausibilidad
 - [x] **E-16** (S) Actualizar `docs/architecture.md` si alguna decisión cambió; regenerar HTML
-- [ ] **E-17** (S) Tag `v0.3.0` — *pendiente: etiquetar al fusionar en `main`*
+- [ ] **E-17** (S) Tag `v0.3.0` — *sustituido por `v1.0.0`*
 
 **✅ Criterio de salida:** 4 proyectos, tests de arquitectura verdes, todos los tests de Diciembre verdes sin modificar sus aserciones, 3 ADR publicados.
 
@@ -231,7 +231,8 @@ gantt
 - [x] **F-12** (S) Job de seguridad: `dotnet list package --vulnerable --include-transitive` que falle ante vulnerabilidades *High*
 - [ ] **F-13** (S) Dependabot (NuGet, GitHub Actions, Docker) + *branch protection* en `main` — *parcial: Dependabot configurado; la protección de rama se activa en los ajustes de GitHub*
 - [x] **F-14** (S) Job `docs`: regenerar HTML (`python scripts/build_docs.py`) y fallar si hay diferencias (`git diff --exit-code docs/`)
-- [ ] **F-15** (S) Badges de CI y cobertura en README; tag `v0.4.0` — *parcial: badge de CI añadido; falta el tag*
+- [ ] **F-15** (S) Badges de CI y cobertura en README; tag `v0.4.0` — *parcial: badges de CI y documentación; el tag se sustituye por `v1.0.0`*
+- [x] **F-16** (S) Publicación de `docs/` en GitHub Pages (`.github/workflows/pages.yml`)
 
 **✅ Criterio de salida:** clon limpio → `docker compose up` → Swagger operativo; CI verde en `main` y en PRs.
 
@@ -270,7 +271,7 @@ gantt
 - [x] **M-18** (S) `EXPLAIN ANALYZE` de consultas críticas documentado
 - [x] **M-19** (M) ADR-004 «Mejoras futuras» (Redis Sorted Sets, SignalR, microservicios, OpenTelemetry, frontend)
 - [x] **M-20** (S) README final: GIF/captura de Swagger, sección «Qué aprendí / trade-offs», enlaces a ADR
-- [ ] **M-21** (S) Release `v1.0.0` — *pendiente: release al fusionar en `main`*
+- [ ] **M-21** (S) Release `v1.0.0` — *automatizada: `.github/workflows/release.yml` la crea al subir el tag*
 
 **✅ Criterio de salida (Definition of Done del proyecto):** clonar → `docker compose up` → Swagger accesible para probar Auth + Score Submit + Ranking → pipeline de CI en verde.
 

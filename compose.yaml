@@ -35,6 +35,7 @@ services:
       Database__MigrateOnStartup: "true"
       Swagger__Enabled: "true"
       Serilog__Format: json
+      DataProtection__KeysPath: /app/keys
       RateLimiting__Enabled: ${RATE_LIMITING_ENABLED:-true} # set to false for load tests (perf/k6)
       Seed__Admin__Email: ${ADMIN_EMAIL:-admin@leaderboard.local}
       Seed__Admin__Password: ${ADMIN_PASSWORD:-Admin-dev-Passw0rd}

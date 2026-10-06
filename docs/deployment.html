@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Benchmark k6 y planes de ejecución">
-<title>Rendimiento (RNF-01) · Leaderboard API</title>
+<meta name="description" content="Render + Neon paso a paso">
+<title>Despliegue gratuito (Render + Neon) · Leaderboard API</title>
 <link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <link rel="stylesheet" media="(prefers-color-scheme: dark)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <style>
@@ -116,8 +116,8 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
       </ul>
       <h2>Resultados</h2>
       <ul>
-        <li><a href="performance.html" aria-current="page">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
-        <li><a href="deployment.html">Despliegue gratuito<small>Render + Neon paso a paso</small></a></li>
+        <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="deployment.html" aria-current="page">Despliegue gratuito<small>Render + Neon paso a paso</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
@@ -131,12 +131,17 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
       <h2>En esta página</h2>
 <div class="toc">
 <ul>
-<li><a href="#1-objetivo">1. Objetivo</a></li>
-<li><a href="#2-metodologia">2. Metodología</a></li>
-<li><a href="#3-resultados">3. Resultados</a></li>
-<li><a href="#4-diagnostico-y-cambios">4. Diagnóstico y cambios</a></li>
-<li><a href="#5-planes-de-ejecucion-diseno-final">5. Planes de ejecución (diseño final)</a></li>
-<li><a href="#6-limites-conocidos">6. Límites conocidos</a></li>
+<li><a href="#1-base-de-datos-en-neon-3-min">1. Base de datos en Neon (≈ 3 min)</a></li>
+<li><a href="#2-api-en-render-2-min-build">2. API en Render (≈ 2 min + build)</a><ul>
+<li><a href="#comprobacion-de-extremo-a-extremo">Comprobación de extremo a extremo</a></li>
+</ul>
+</li>
+<li><a href="#3-que-hace-renderyaml">3. Qué hace render.yaml</a><ul>
+<li><a href="#claves-de-data-protection-sin-disco-persistente">Claves de Data Protection sin disco persistente</a></li>
+</ul>
+</li>
+<li><a href="#4-limites-de-la-demo-gratuita">4. Límites de la demo gratuita</a></li>
+<li><a href="#5-problemas-frecuentes">5. Problemas frecuentes</a></li>
 </ul>
 </div>
 
@@ -145,217 +150,212 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
   </aside>
   <main id="main">
     <article class="content">
-<h1 id="rendimiento-rnf-01">Rendimiento (RNF-01)<a class="headerlink" href="#rendimiento-rnf-01" title="Enlace a esta sección">#</a></h1>
+<h1 id="despliegue-gratuito-render-neon">Despliegue gratuito (Render + Neon)<a class="headerlink" href="#despliegue-gratuito-render-neon" title="Enlace a esta sección">#</a></h1>
 <blockquote>
-<p><strong>Documento:</strong> <code>docs/performance.md</code> · <strong>Fecha de la medición:</strong> 2027-03 · <strong>Versión de la API:</strong> 1.0<br />
-<strong>Relacionados:</strong> <a href="requirements.html#3-requerimientos-no-funcionales">Requerimientos RNF-01</a> · <a href="architecture.html#3-modelo-de-datos">Arquitectura §3</a> · <a href="adr/0001-postgresql.html">ADR-001</a></p>
+<p><strong>Documento:</strong> <code>docs/deployment.md</code> · <strong>Estado:</strong> Vigente · <strong>Versión:</strong> 1.0<br />
+<strong>Relacionados:</strong> <a href="architecture.html#56-gestion-de-secretos">Arquitectura §5.6</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></p>
 </blockquote>
-<h2 id="1-objetivo">1. Objetivo<a class="headerlink" href="#1-objetivo" title="Enlace a esta sección">#</a></h2>
+<p>Guía para publicar una <strong>demo pública</strong> de la API, con HTTPS y Swagger, sin coste y sin tarjeta:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Operación</th>
-<th>Objetivo p95</th>
+<th>Pieza</th>
+<th>Servicio</th>
+<th>Plan gratuito</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Top N, página del ranking, posición absoluta, ventana relativa</td>
-<td><strong>&lt; 100 ms</strong></td>
+<td>API (contenedor Docker)</td>
+<td><a href="https://render.com">Render</a> · <em>Web Service</em></td>
+<td>Gratis; se duerme tras ~15 min sin tráfico y tarda 30–60 s en despertar</td>
 </tr>
 <tr>
-<td>Envío de puntuación firmado (HMAC)</td>
-<td><strong>&lt; 150 ms</strong></td>
+<td>PostgreSQL</td>
+<td><a href="https://neon.tech">Neon</a></td>
+<td>Gratis sin caducidad; se suspende sin uso y despierta en ~1 s</td>
 </tr>
 </tbody>
 </table></div>
-<p>Con <strong>100 000 jugadores</strong> en un mismo juego y el entorno <code>docker compose</code> local.</p>
-<h2 id="2-metodologia">2. Metodología<a class="headerlink" href="#2-metodologia" title="Enlace a esta sección">#</a></h2>
+<blockquote>
+<p>Los planes gratuitos cambian con frecuencia: confirma las condiciones actuales en la web de cada proveedor.</p>
+</blockquote>
+<pre class="mermaid">flowchart LR
+    U[&quot;🌐 Navegador / cliente&quot;] -- HTTPS --&gt; R[&quot;Render&lt;br/&gt;proxy TLS&quot;]
+    R -- &quot;HTTP :8080&lt;br/&gt;X-Forwarded-For&quot; --&gt; A[&quot;leaderboard-api&lt;br/&gt;(Dockerfile del repo)&quot;]
+    A -- &quot;TLS · sslmode=require&quot; --&gt; N[(&quot;Neon&lt;br/&gt;PostgreSQL&quot;)]
+    GH[&quot;GitHub main&quot;] -- &quot;auto-deploy&quot; --&gt; R
+</pre>
+<h2 id="1-base-de-datos-en-neon-3-min">1. Base de datos en Neon (≈ 3 min)<a class="headerlink" href="#1-base-de-datos-en-neon-3-min" title="Enlace a esta sección">#</a></h2>
+<ol>
+<li>Entra en <a href="https://neon.tech">neon.tech</a> con tu cuenta de GitHub y crea un proyecto:
+   - <strong>Postgres version:</strong> la más reciente disponible (17 o superior).
+   - <strong>Region:</strong> <em>AWS Europe Central (Frankfurt)</em>, la misma región que usa <code>render.yaml</code>, para que la latencia sea mínima.</li>
+<li>En <strong>Connect</strong>, desactiva <em>Connection pooling</em> (las migraciones de EF Core van mejor con la conexión directa) y copia la cadena de conexión. Tiene esta forma:</li>
+</ol>
+<p><code>text
+   postgresql://neondb_owner:********@ep-xxxx-xxxx.eu-central-1.aws.neon.tech/neondb?sslmode=require</code></p>
+<p>Puedes pegarla tal cual: la API acepta tanto URIs <code>postgresql://…</code> como el formato de Npgsql (<code>Host=…;Database=…</code>).</p>
+<p>No hace falta crear tablas: la API aplica las migraciones al arrancar (<code>Database__MigrateOnStartup=true</code>) e instala la extensión <code>citext</code>.</p>
+<h2 id="2-api-en-render-2-min-build">2. API en Render (≈ 2 min + build)<a class="headerlink" href="#2-api-en-render-2-min-build" title="Enlace a esta sección">#</a></h2>
+<p><a href="https://render.com/deploy?repo=https://github.com/alba-alonso-dev/leaderboard-api"><img alt="Deploy to Render" src="https://render.com/images/deploy-to-render-button.svg" /></a></p>
+<ol>
+<li>Pulsa el botón (o en Render: <strong>New → Blueprint</strong> y elige el repositorio). Render lee <a href="../render.yaml"><code>render.yaml</code></a>.</li>
+<li>Rellena las tres variables marcadas como secretas:</li>
+</ol>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Elemento</th>
+<th>Variable</th>
 <th>Valor</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Entorno</td>
-<td><code>docker compose</code> (API en imagen <em>chiseled</em> + <code>postgres:18-alpine</code>), 4 vCPU, misma máquina que el generador de carga</td>
+<td><code>ConnectionStrings__Postgres</code></td>
+<td>La cadena de Neon del paso 1</td>
 </tr>
 <tr>
-<td>Datos</td>
-<td>100 000 jugadores con una puntuación cada uno (<code>perf/seed.sql</code>), <code>VACUUM ANALYZE</code> tras la carga</td>
+<td><code>Seed__Admin__Email</code></td>
+<td>Email del administrador de la demo</td>
 </tr>
 <tr>
-<td>Herramienta</td>
-<td><a href="https://k6.io">k6</a> (<code>perf/leaderboard.js</code>), escenarios de tasa constante durante 60 s</td>
-</tr>
-<tr>
-<td>Carga</td>
-<td><strong>100 lecturas/s</strong> (25 % Top 10, 25 % página aleatoria de 20 entre las primeras 5 000, 25 % posición absoluta, 25 % ventana <code>range=5</code>) + <strong>20 envíos firmados/s</strong></td>
-</tr>
-<tr>
-<td>Configuración</td>
-<td><code>RATE_LIMITING_ENABLED=false</code> (si no, el rate limiting por IP limita al propio k6)</td>
+<td><code>Seed__Admin__Password</code></td>
+<td>Contraseña robusta para ese administrador</td>
 </tr>
 </tbody>
 </table></div>
-<p>Reproducción:</p>
-<pre><code class="language-bash">RATE_LIMITING_ENABLED=false docker compose up -d --build --wait
-# 1) Crear juego + API key (Swagger o scripts/smoke-test.sh) y anotar GAME_ID, API_KEY_ID (uuid), KEY_ID y SECRET
-docker compose exec -T postgres psql -U leaderboard -d leaderboard \
-  -v game_id=$GAME_ID -v api_key_id=$API_KEY_ID -v players=100000 &lt; perf/seed.sql
-docker run --rm --network host -v &quot;$PWD/perf:/perf&quot; \
-  -e GAME_ID=$GAME_ID -e KEY_ID=$KEY_ID -e SECRET=$SECRET grafana/k6 run /perf/leaderboard.js
+<p>Render <strong>genera automáticamente</strong> <code>Jwt__SigningKey</code> y <code>DataProtection__KeyEncryptionKey</code> (256 bits aleatorios).
+3. <strong>Apply</strong>. El primer build tarda unos minutos. Cuando el servicio esté <em>Live</em>:
+   - <code>https://&lt;tu-servicio&gt;.onrender.com/health/ready</code> → <code>{"status":"Healthy", …}</code>
+   - <code>https://&lt;tu-servicio&gt;.onrender.com/swagger</code> → Swagger UI</p>
+<p>Cada push a <code>main</code> vuelve a desplegar automáticamente (<code>autoDeploy: true</code>).</p>
+<h3 id="comprobacion-de-extremo-a-extremo">Comprobación de extremo a extremo<a class="headerlink" href="#comprobacion-de-extremo-a-extremo" title="Enlace a esta sección">#</a></h3>
+<pre><code class="language-bash">BASE_URL=https://&lt;tu-servicio&gt;.onrender.com ./scripts/smoke-test.sh
 </code></pre>
-<h2 id="3-resultados">3. Resultados<a class="headerlink" href="#3-resultados" title="Enlace a esta sección">#</a></h2>
-<p>La primera medición <strong>no cumplía</strong> el objetivo; el análisis de los planes de ejecución llevó a un rediseño del índice y de las consultas.</p>
+<h2 id="3-que-hace-renderyaml">3. Qué hace <code>render.yaml</code><a class="headerlink" href="#3-que-hace-renderyaml" title="Enlace a esta sección">#</a></h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Operación (p95)</th>
-<th style="text-align: right;">Diseño inicial</th>
-<th style="text-align: right;">Diseño final</th>
-<th style="text-align: right;">Objetivo</th>
+<th>Variable</th>
+<th>Valor</th>
+<th>Por qué</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Top 10</td>
-<td style="text-align: right;">263 ms</td>
-<td style="text-align: right;"><strong>11,6 ms</strong></td>
-<td style="text-align: right;">&lt; 100 ms ✅</td>
+<td><code>ASPNETCORE_ENVIRONMENT</code></td>
+<td><code>Production</code></td>
+<td>Sin detalles de errores en las respuestas, HSTS activado</td>
 </tr>
 <tr>
-<td>Página (offset ≤ 100 000)</td>
-<td style="text-align: right;">4 670 ms</td>
-<td style="text-align: right;"><strong>48,8 ms</strong></td>
-<td style="text-align: right;">&lt; 100 ms ✅</td>
+<td><code>PORT</code></td>
+<td><code>8080</code></td>
+<td>Puerto al que Render envía el tráfico (el de la imagen)</td>
 </tr>
 <tr>
-<td>Posición absoluta</td>
-<td style="text-align: right;">782 ms</td>
-<td style="text-align: right;"><strong>32,9 ms</strong></td>
-<td style="text-align: right;">&lt; 100 ms ✅</td>
+<td><code>ASPNETCORE_FORWARDEDHEADERS_ENABLED</code></td>
+<td><code>true</code></td>
+<td>Detrás del proxy de Render, la IP del cliente llega en <code>X-Forwarded-For</code>. Sin esto, <strong>todos</strong> los clientes compartirían el mismo límite de peticiones</td>
 </tr>
 <tr>
-<td>Ventana relativa (±5)</td>
-<td style="text-align: right;">2 850 ms</td>
-<td style="text-align: right;"><strong>38,8 ms</strong></td>
-<td style="text-align: right;">&lt; 100 ms ✅</td>
+<td><code>Jwt__SigningKey</code></td>
+<td>generada</td>
+<td>Clave HS256 de los tokens</td>
 </tr>
 <tr>
-<td>Envío firmado</td>
-<td style="text-align: right;">1 090 ms</td>
-<td style="text-align: right;"><strong>52,9 ms</strong></td>
-<td style="text-align: right;">&lt; 150 ms ✅</td>
+<td><code>DataProtection__KeyEncryptionKey</code></td>
+<td>generada</td>
+<td>Cifra con AES-256-GCM el <em>key ring</em> de Data Protection (ver abajo)</td>
 </tr>
 <tr>
-<td>Throughput sostenido</td>
-<td style="text-align: right;">57 req/s (saturado, 50 % de iteraciones descartadas)</td>
-<td style="text-align: right;"><strong>120 req/s</strong> (0 descartadas)</td>
-<td style="text-align: right;">120 req/s</td>
+<td><code>Database__MigrateOnStartup</code></td>
+<td><code>true</code></td>
+<td>Crea y actualiza el esquema al arrancar</td>
 </tr>
 <tr>
-<td>Errores</td>
-<td style="text-align: right;">0 %</td>
-<td style="text-align: right;">0 %</td>
-<td style="text-align: right;">&lt; 1 %</td>
+<td><code>Swagger__Enabled</code></td>
+<td><code>true</code></td>
+<td>Swagger visible en Production para la demo</td>
+</tr>
+<tr>
+<td><code>Serilog__Format</code></td>
+<td><code>json</code></td>
+<td>Logs estructurados en el panel de Render</td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="4-diagnostico-y-cambios">4. Diagnóstico y cambios<a class="headerlink" href="#4-diagnostico-y-cambios" title="Enlace a esta sección">#</a></h2>
+<h3 id="claves-de-data-protection-sin-disco-persistente">Claves de Data Protection sin disco persistente<a class="headerlink" href="#claves-de-data-protection-sin-disco-persistente" title="Enlace a esta sección">#</a></h3>
+<p>Los secretos de las API Keys se guardan cifrados con ASP.NET Core Data Protection. Sus claves (<em>key ring</em>) deben sobrevivir a los reinicios, o las API Keys emitidas dejarían de funcionar:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Síntoma (diseño inicial)</th>
-<th>Causa en el plan</th>
-<th>Cambio</th>
+<th>Entorno</th>
+<th>Dónde vive el <em>key ring</em></th>
+<th>Protección</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Página: 168 ms en frío, segundos bajo carga</td>
-<td><em>Hash Join</em> de las 100 000 filas con <code>players</code> + <em>external merge sort</em> en disco: se paginaba <strong>después</strong> del join.</td>
-<td>Paginar el índice primero (<code>ORDER BY … OFFSET … LIMIT</code> en subconsulta) y unir usuarios solo para las filas devueltas.</td>
+<td>Docker Compose</td>
+<td>Volumen <code>dp-keys</code> (<code>DataProtection__KeysPath=/app/keys</code>)</td>
+<td>Fuera de la base de datos</td>
 </tr>
 <tr>
-<td>Cada petición de ranking pagaba 17 ms extra</td>
-<td><code>COUNT(*)</code> total con <em>Seq Scan</em> para calcular <code>totalCount</code>/percentil.</td>
-<td>Contador exacto <code>leaderboard_stats.player_count</code>, mantenido <strong>en la misma sentencia</strong> del upsert (<code>RETURNING (xmax = 0)</code> detecta la primera entrada del jugador).</td>
-</tr>
-<tr>
-<td>Ventana relativa en segundos</td>
-<td>El índice <code>(sort_key DESC, achieved_at ASC, player_id ASC)</code> mezclaba direcciones: no admite comparación de tuplas y PostgreSQL ordenaba decenas de miles de filas por petición.</td>
-<td>Clave normalizada <strong><code>rank_key</code> (menor es mejor)</strong> e índice <strong>totalmente ascendente</strong> <code>(game_id, rank_key, achieved_at, player_id) INCLUDE (best_score, score_id)</code>. Las búsquedas usan <code>(rank_key, achieved_at, player_id) &lt; (…)</code> → <em>Index Scan Backward</em> con <code>LIMIT k</code>.</td>
+<td>Render (sin disco)</td>
+<td>Tabla <code>data_protection_keys</code> en PostgreSQL</td>
+<td>Cifrado con <code>DataProtection__KeyEncryptionKey</code> (AES-256-GCM): una filtración de la base de datos sola no expone los secretos</td>
 </tr>
 </tbody>
 </table></div>
-<h2 id="5-planes-de-ejecucion-diseno-final">5. Planes de ejecución (diseño final)<a class="headerlink" href="#5-planes-de-ejecucion-diseno-final" title="Enlace a esta sección">#</a></h2>
-<p><strong>Top 10</strong> — 0,4 ms, <em>Index Only Scan</em> + 10 búsquedas por PK:</p>
-<pre><code class="language-text">Nested Loop (actual time=0.082..0.276 rows=10)
-  -&gt;  Limit
-        -&gt;  Index Only Scan using ix_leaderboard_entries_rank (rows=10)  Index Cond: (game_id = &lt;game&gt;)
-  -&gt;  Index Scan using pk_players on players p (loops=10)
-Execution Time: 0.378 ms
-</code></pre>
-<p><strong>Ventana relativa (5 por encima del jugador 50 001)</strong> — 0,08 ms:</p>
-<pre><code class="language-text">Limit (actual time=0.037..0.045 rows=5)
-  -&gt;  Index Scan Backward using ix_leaderboard_entries_rank
-        Index Cond: ((game_id = &lt;game&gt;) AND (ROW(rank_key, achieved_at, player_id) &lt; ROW(...)))
-Execution Time: 0.081 ms
-</code></pre>
-<p><strong>Página profunda (OFFSET 50 000)</strong> — 39 ms, <em>Index Only Scan</em> que recorre 50 020 entradas del índice:</p>
-<pre><code class="language-text">Nested Loop (rows=20)
-  -&gt;  Limit  -&gt;  Index Only Scan using ix_leaderboard_entries_rank (rows=50020)
-  -&gt;  Index Scan using pk_players (loops=20)
-Execution Time: 38.769 ms
-</code></pre>
-<p><strong>Posición absoluta del jugador 50 001</strong> — 19 ms, cuenta las 50 000 entradas por delante:</p>
-<pre><code class="language-text">Aggregate  -&gt;  Seq Scan on leaderboard_entries  Filter: (ROW(rank_key, achieved_at, player_id) &lt; ROW(...))
-Execution Time: 19.180 ms
-</code></pre>
-<h2 id="6-limites-conocidos">6. Límites conocidos<a class="headerlink" href="#6-limites-conocidos" title="Enlace a esta sección">#</a></h2>
+<p>En <code>Production</code>, si el <em>key ring</em> va a la base de datos y no hay <code>KeyEncryptionKey</code>, <strong>la API se niega a arrancar</strong> en lugar de guardarlo en claro.</p>
+<h2 id="4-limites-de-la-demo-gratuita">4. Límites de la demo gratuita<a class="headerlink" href="#4-limites-de-la-demo-gratuita" title="Enlace a esta sección">#</a></h2>
+<ul>
+<li><strong>Arranque en frío:</strong> la primera petición tras 15 min sin tráfico tarda 30–60 s. Abre <code>/health/ready</code> un minuto antes de enseñar la demo.</li>
+<li><strong>Una sola instancia:</strong> el rate limiting es en memoria (suficiente para una demo; ver <a href="adr/0004-future-improvements.html">ADR-004</a> para varias réplicas).</li>
+<li><strong>Migraciones al arrancar:</strong> cómodo para una demo; en un entorno real se ejecutarían como paso previo del pipeline (<em>migration bundle</em>).</li>
+<li><strong>Registro abierto:</strong> cualquiera puede registrarse y crear juegos. Los límites de peticiones por IP protegen la demo de abusos básicos.</li>
+</ul>
+<h2 id="5-problemas-frecuentes">5. Problemas frecuentes<a class="headerlink" href="#5-problemas-frecuentes" title="Enlace a esta sección">#</a></h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Límite</th>
-<th>Coste</th>
-<th>Cuándo importa</th>
-<th>Evolución (ADR-004)</th>
+<th>Síntoma en los logs de Render</th>
+<th>Causa</th>
+<th>Solución</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Paginación por offset</td>
-<td>O(offset)</td>
-<td>Páginas muy profundas (&gt; 100 000)</td>
-<td>Paginación <em>keyset</em> con cursor opaco (<code>?after=</code>) reutilizando la misma comparación de tuplas.</td>
+<td><code>Connection string 'Postgres' is not configured</code></td>
+<td>Falta <code>ConnectionStrings__Postgres</code></td>
+<td>Añádela en <em>Environment</em> y vuelve a desplegar</td>
 </tr>
 <tr>
-<td>Rango absoluto</td>
-<td>O(rank)</td>
-<td>Juegos con &gt; 1 M de jugadores y consultas de jugadores en la cola</td>
-<td>Redis Sorted Sets (<code>ZREVRANK</code>, O(log n)) como caché del ranking.</td>
+<td><code>DataProtection:KeyEncryptionKey must be a base64-encoded 256-bit key</code></td>
+<td>Valor manual incorrecto</td>
+<td>Usa <code>openssl rand -base64 32</code> o deja que Render lo genere</td>
 </tr>
 <tr>
-<td>Contador de jugadores</td>
-<td>1 fila caliente por juego al entrar jugadores nuevos</td>
-<td>Picos de miles de altas por segundo en un mismo juego</td>
-<td>Contador particionado o agregación asíncrona.</td>
+<td><code>The key ring is encrypted but DataProtection:KeyEncryptionKey is not configured</code></td>
+<td>Se borró o cambió la clave</td>
+<td>Restaura el valor anterior. Si se perdió, revoca y vuelve a emitir las API Keys</td>
 </tr>
 <tr>
-<td>Generador y sistema bajo prueba en la misma máquina</td>
-<td>Resultados conservadores</td>
-<td>—</td>
-<td>Medir en infraestructura separada antes de producción.</td>
+<td>Timeout o <code>SSL</code> al conectar</td>
+<td>Cadena sin <code>sslmode=require</code> o región lejana</td>
+<td>Copia de nuevo la cadena desde Neon</td>
+</tr>
+<tr>
+<td><code>429 Too Many Requests</code> para todos</td>
+<td>Falta <code>ASPNETCORE_FORWARDEDHEADERS_ENABLED=true</code></td>
+<td>Revisa las variables del servicio</td>
 </tr>
 </tbody>
 </table></div>
     </article>
     <footer class="page-footer">
-      <span>Generado desde <a href="performance.md"><code>docs/performance.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
+      <span>Generado desde <a href="deployment.md"><code>docs/deployment.md</code></a> con <code>scripts/build_docs.py</code>. No editar este HTML a mano.</span>
       <span><a href="https://github.com/alba-alonso-dev/leaderboard-api">Repositorio</a> · <a href="https://github.com/alba-alonso-dev/leaderboard-api/blob/main/README.md">README</a></span>
     </footer>
   </main>

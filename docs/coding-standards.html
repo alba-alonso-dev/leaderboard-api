@@ -117,6 +117,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
       <h2>Resultados</h2>
       <ul>
         <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="deployment.html">Despliegue gratuito<small>Render + Neon paso a paso</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
@@ -476,7 +477,7 @@ public static class ScoreErrors
 <h3 id="41-piramide">4.1 Pirámide<a class="headerlink" href="#41-piramide" title="Enlace a esta sección">#</a></h3>
 <pre class="mermaid">flowchart TB
     A[&quot;🔺 Smoke (CI · Docker Compose)&lt;br/&gt;health + swagger · 2-3 checks&quot;]
-    B[&quot;Integración (WebApplicationFactory + Testcontainers PostgreSQL)&lt;br/&gt;contrato HTTP, auth, SQL real, concurrencia · 78 tests&quot;]
+    B[&quot;Integración (WebApplicationFactory + Testcontainers PostgreSQL)&lt;br/&gt;contrato HTTP, auth, SQL real, concurrencia · 91 tests&quot;]
     C[&quot;Unitarios (Domain + Application)&lt;br/&gt;reglas, validadores, handlers con fakes · 108 tests&quot;]
     D[&quot;Arquitectura (NetArchTest)&lt;br/&gt;regla de dependencias, convenciones · 11 tests&quot;]
     A --- B --- C
@@ -617,6 +618,12 @@ public void Domain_ShouldNotDependOnAnyOtherLayer() =&gt;
 <tr>
 <td>Hash de contraseñas</td>
 <td><code>PasswordHasher&lt;T&gt;</code> (framework compartido <code>Microsoft.AspNetCore.App</code>, sin paquete extra)</td>
+<td>MIT</td>
+<td>Infrastructure</td>
+</tr>
+<tr>
+<td>Key ring en base de datos</td>
+<td><code>Microsoft.AspNetCore.DataProtection.EntityFrameworkCore</code></td>
 <td>MIT</td>
 <td>Infrastructure</td>
 </tr>

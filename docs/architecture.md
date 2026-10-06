@@ -565,11 +565,13 @@ sequenceDiagram
 
 ### 5.6 Gestión de secretos
 
-| Secreto | Desarrollo | Docker Compose | Producción (futuro) |
-|---|---|---|---|
-| `ConnectionStrings__Postgres` | user-secrets | `.env` (no versionado; `.env.example` sí) | Key Vault / secretos del orquestador |
-| `Jwt__SigningKey` | user-secrets | `.env` | Key Vault |
-| Data Protection key ring | Carpeta local | Volumen `dp-keys` | Blob + Key Vault |
+| Secreto | Desarrollo | Docker Compose | Demo pública (Render + Neon) | Producción real (futuro) |
+|---|---|---|---|---|
+| `ConnectionStrings__Postgres` | `appsettings.Development.json` (solo local) | `.env` (no versionado; `.env.example` sí) | Variable secreta de Render (URI de Neon) | Key Vault / secretos del orquestador |
+| `Jwt__SigningKey` | `appsettings.Development.json` (clave *DEV-ONLY*) | `.env` | Generada por Render | Key Vault |
+| Data Protection key ring | Carpeta local `.keys` | Volumen `dp-keys` | Tabla `data_protection_keys`, cifrada con `DataProtection__KeyEncryptionKey` (AES-256-GCM, generada por Render) | Blob + Key Vault |
+
+Si el *key ring* se guarda en la base de datos en `Production`, es obligatorio cifrarlo: sin `KeyEncryptionKey` la API no arranca. Guía de despliegue: [deployment.md](deployment.md).
 
 ---
 

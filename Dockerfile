@@ -24,8 +24,9 @@ WORKDIR /app
 COPY --from=build --chown=1654:1654 /app/keys /app/keys
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_HTTP_PORTS=8080 \
-    DataProtection__KeysPath=/app/keys
+# The Data Protection key ring goes to /app/keys when DataProtection__KeysPath points there (Docker Compose mounts a
+# volume); otherwise it is stored in PostgreSQL (hosts without persistent disks, e.g. Render).
+ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
 USER 1654
 

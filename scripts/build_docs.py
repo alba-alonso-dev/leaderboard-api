@@ -34,6 +34,7 @@ PAGES = [
     ("roadmap-and-tasks.md", "Roadmap y tareas", "Fases Noviembre → Marzo", "Diseño"),
     ("coding-standards.md", "Estándares de código", "Convenciones, patrones y testing", "Diseño"),
     ("performance.md", "Rendimiento", "Benchmark k6 y planes de ejecución", "Resultados"),
+    ("deployment.md", "Despliegue gratuito", "Render + Neon paso a paso", "Resultados"),
     ("adr/0001-postgresql.md", "ADR-001 · PostgreSQL", "Almacén principal", "Decisiones (ADR)"),
     ("adr/0002-clean-architecture.md", "ADR-002 · Clean Architecture", "Estructura en capas", "Decisiones (ADR)"),
     ("adr/0003-anti-cheat.md", "ADR-003 · Anti-cheat", "HMAC, nonce, rate limiting", "Decisiones (ADR)"),

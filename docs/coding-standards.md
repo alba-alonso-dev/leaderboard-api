@@ -207,7 +207,7 @@ public sealed class LeaderboardEndpoints : IEndpointGroup
 ```mermaid
 flowchart TB
     A["🔺 Smoke (CI · Docker Compose)<br/>health + swagger · 2-3 checks"]
-    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · 78 tests"]
+    B["Integración (WebApplicationFactory + Testcontainers PostgreSQL)<br/>contrato HTTP, auth, SQL real, concurrencia · 91 tests"]
     C["Unitarios (Domain + Application)<br/>reglas, validadores, handlers con fakes · 108 tests"]
     D["Arquitectura (NetArchTest)<br/>regla de dependencias, convenciones · 11 tests"]
     A --- B --- C
@@ -295,6 +295,7 @@ public void Domain_ShouldNotDependOnAnyOtherLayer() =>
 | ORM / PostgreSQL | `Microsoft.EntityFrameworkCore`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `EFCore.NamingConventions` | MIT / PostgreSQL / Apache-2.0 | Infrastructure |
 | JWT | `Microsoft.AspNetCore.Authentication.JwtBearer` | MIT | Api / Infrastructure |
 | Hash de contraseñas | `PasswordHasher<T>` (framework compartido `Microsoft.AspNetCore.App`, sin paquete extra) | MIT | Infrastructure |
+| Key ring en base de datos | `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore` | MIT | Infrastructure |
 | Validación | `FluentValidation`, `FluentValidation.DependencyInjectionExtensions` | Apache-2.0 | Application |
 | DI scanning / decoradores | `Scrutor` | MIT | Application / Api |
 | OpenAPI | `Microsoft.AspNetCore.OpenApi`, `Swashbuckle.AspNetCore.SwaggerUI` | MIT | Api |

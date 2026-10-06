@@ -7,7 +7,7 @@
 ![.NET 10 LTS](https://img.shields.io/badge/.NET-10%20LTS-512BD4?logo=dotnet)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-197-success)
+![Tests](https://img.shields.io/badge/tests-210-success)
 ![Coverage](https://img.shields.io/badge/coverage-%E2%89%A596%25-success)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
@@ -32,7 +32,7 @@ Es un proyecto de portafolio que muestra, en un dominio pequeño y fácil de ent
 | **Seguridad** | **JWT** con refresh tokens rotatorios y detección de robo para jugadores; **API Key + firma HMAC-SHA256** con anti-replay idempotente para servidores de juego; secretos cifrados con Data Protection; puntuaciones sospechosas retenidas para moderación; controles OWASP API Top 10. |
 | **Datos** | Histórico inmutable + proyección de mejor marca en **PostgreSQL**; upsert atómico `ON CONFLICT`; índice cubriente con búsquedas *keyset* por tupla. |
 | **Rendimiento medido** | Benchmark **k6** con 100 000 jugadores: p95 < 50 ms en todas las lecturas tras diagnosticar y rediseñar el índice ([informe](docs/performance.md)). |
-| **Calidad** | 197 tests: unitarios, integración con `WebApplicationFactory` + **Testcontainers** (PostgreSQL real) y arquitectura. Cobertura ≥ 96 % con umbral en CI. |
+| **Calidad** | 210 tests: unitarios, integración con `WebApplicationFactory` + **Testcontainers** (PostgreSQL real) y arquitectura. Cobertura ≥ 96 % con umbral en CI. |
 | **Operación** | **Docker** (imagen *chiseled* no root) + **Compose**, **GitHub Actions**, **Serilog** JSON con correlación de `traceId`, health checks, **rate limiting** nativo. |
 | **Ingeniería** | Requisitos trazables a tareas y tests, y 4 **ADRs** con alternativas y consecuencias. |
 
@@ -139,6 +139,12 @@ Un nuevo récord más de 10 veces mejor que el anterior se guarda como `PendingR
 
 **Administrador de demo** (moderación): `admin@leaderboard.local` / `Admin-dev-Passw0rd` (configurable con `ADMIN_EMAIL`/`ADMIN_PASSWORD`).
 
+### Demo pública gratuita (Render + Neon)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/alba-alonso-dev/leaderboard-api)
+
+Crea una base de datos gratuita en [Neon](https://neon.tech), pulsa el botón y pega su cadena de conexión: [`render.yaml`](render.yaml) configura el resto (claves generadas, migraciones, Swagger, cabeceras del proxy). Guía completa en [docs/deployment.md](docs/deployment.md).
+
 ### Con el SDK de .NET 10
 
 ```bash
@@ -149,7 +155,7 @@ dotnet run --project src/Leaderboard.Api       # http://localhost:8080/swagger (
 ## Tests y calidad
 
 ```bash
-dotnet test                                    # 197 tests (integración con Testcontainers: requiere Docker)
+dotnet test                                    # 210 tests (integración con Testcontainers: requiere Docker)
 dotnet format --verify-no-changes              # estilo (.editorconfig)
 ```
 
@@ -157,7 +163,7 @@ dotnet format --verify-no-changes              # estilo (.editorconfig)
 |---|---:|---|
 | `Leaderboard.Domain.UnitTests` | 43 | Normalización de `rank_key`, rango permitido, heurística de plausibilidad, estados de moderación, rotación de refresh tokens |
 | `Leaderboard.Application.UnitTests` | 65 | Validadores, autenticador HMAC (`FakeTimeProvider`), handlers de auth y envío (replay, nonce reutilizado, límites) |
-| `Leaderboard.Api.IntegrationTests` | 78 | HTTP extremo a extremo contra PostgreSQL 18 real: BOLA, `If-Match`, HMAC manipulado/caducado, concurrencia, ranking y desempates, moderación y cola de revisión, ProblemDetails, OpenAPI, caída de BD, rate limiting, correlación log ↔ `traceId` |
+| `Leaderboard.Api.IntegrationTests` | 91 | HTTP extremo a extremo contra PostgreSQL 18 real: BOLA, `If-Match`, HMAC manipulado/caducado, concurrencia, ranking y desempates, moderación y cola de revisión, *key ring* persistente y cifrado, IP real detrás de proxy, ProblemDetails, OpenAPI, caída de BD, rate limiting, correlación log ↔ `traceId` |
 | `Leaderboard.ArchitectureTests` | 11 | Regla de dependencias, handlers `sealed internal`, un handler por caso de uso, dominio sin setters públicos |
 
 Cobertura de líneas: Domain 98 % · Application 96,5 % · Infrastructure 99,4 % · Api 97,9 %.
@@ -213,6 +219,7 @@ Toda la documentación está en Markdown (fuente) y en HTML navegable con diagra
 | Roadmap y tareas | [roadmap-and-tasks.md](docs/roadmap-and-tasks.md) | [roadmap-and-tasks.html](docs/roadmap-and-tasks.html) |
 | Estándares de código y testing | [coding-standards.md](docs/coding-standards.md) | [coding-standards.html](docs/coding-standards.html) |
 | Rendimiento | [performance.md](docs/performance.md) | [performance.html](docs/performance.html) |
+| Despliegue gratuito (Render + Neon) | [deployment.md](docs/deployment.md) | [deployment.html](docs/deployment.html) |
 | ADR-001 · PostgreSQL | [0001-postgresql.md](docs/adr/0001-postgresql.md) | [HTML](docs/adr/0001-postgresql.html) |
 | ADR-002 · Clean Architecture | [0002-clean-architecture.md](docs/adr/0002-clean-architecture.md) | [HTML](docs/adr/0002-clean-architecture.html) |
 | ADR-003 · Anti-cheat | [0003-anti-cheat.md](docs/adr/0003-anti-cheat.md) | [HTML](docs/adr/0003-anti-cheat.html) |

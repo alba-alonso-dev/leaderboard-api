@@ -105,6 +105,9 @@ try
             ui.EnablePersistAuthorization();
             ui.DisplayRequestDuration();
         });
+
+        // The root has no resource of its own: send visitors of the public demo to the interactive docs.
+        app.MapGet("/", () => Results.Redirect("/swagger/index.html")).ExcludeFromDescription();
     }
 
     app.UseAuthentication();

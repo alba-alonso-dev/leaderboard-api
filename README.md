@@ -141,6 +141,8 @@ Un nuevo récord más de 10 veces mejor que el anterior se guarda como `PendingR
 
 ### Demo pública gratuita (Render + Neon)
 
+**Demo en vivo:** [leaderboard-api-1lnq.onrender.com](https://leaderboard-api-1lnq.onrender.com) (Swagger). Plan gratuito: tras 15 min sin tráfico el servicio se duerme y la primera petición tarda ~1 min.
+
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/alba-alonso-dev/leaderboard-api)
 
 Crea una base de datos gratuita en [Neon](https://neon.tech), pulsa el botón y pega su cadena de conexión: [`render.yaml`](render.yaml) configura el resto (claves generadas, migraciones, Swagger, cabeceras del proxy). Guía completa en [docs/deployment.md](docs/deployment.md).

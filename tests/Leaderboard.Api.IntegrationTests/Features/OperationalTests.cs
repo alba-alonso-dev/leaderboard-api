@@ -41,6 +41,15 @@ public sealed class OperationalTests(ApiFactory factory) : IntegrationTest(facto
         (await Api.Client.GetAsync("/swagger/index.html")).StatusCode.ShouldBe(HttpStatusCode.OK);
 
     [Fact]
+    public async Task Root_RedirectsToSwaggerUi()
+    {
+        var response = await Api.Client.GetAsync("/");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.RequestMessage!.RequestUri!.AbsolutePath.ShouldBe("/swagger/index.html");
+    }
+
+    [Fact]
     public async Task UnknownRoute_ReturnsProblemDetails() =>
         await (await Api.Client.GetAsync("/api/v1/does-not-exist")).ShouldBeProblemAsync(HttpStatusCode.NotFound, "resource.not_found");
 

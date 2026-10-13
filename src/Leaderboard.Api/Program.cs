@@ -7,6 +7,7 @@ using Leaderboard.Api.OpenApi;
 using Leaderboard.Application;
 using Leaderboard.Infrastructure;
 using Leaderboard.Infrastructure.Persistence;
+using Leaderboard.Infrastructure.Security;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -62,6 +63,10 @@ try
         .AddApiHealthChecks()
         .AddApiOpenApi()
         .AddRequestTimeouts(timeouts => timeouts.DefaultPolicy = new() { Timeout = TimeSpan.FromSeconds(30) });
+
+    DataProtectionSetup.EnsureKeyRingIsProtected(
+        builder.Configuration.GetSection(DataProtectionStorageOptions.SectionName).Get<DataProtectionStorageOptions>() ?? new(),
+        builder.Environment.IsProduction());
 
     var app = builder.Build();
 

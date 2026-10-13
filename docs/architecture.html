@@ -117,6 +117,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
       <h2>Resultados</h2>
       <ul>
         <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="deployment.html">Despliegue gratuito<small>Render + Neon paso a paso</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
@@ -1167,30 +1168,35 @@ X-Signature: 3q2+7w6… (base64 HMAC-SHA256)
 <th>Secreto</th>
 <th>Desarrollo</th>
 <th>Docker Compose</th>
-<th>Producción (futuro)</th>
+<th>Demo pública (Render + Neon)</th>
+<th>Producción real (futuro)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>ConnectionStrings__Postgres</code></td>
-<td>user-secrets</td>
+<td><code>appsettings.Development.json</code> (solo local)</td>
 <td><code>.env</code> (no versionado; <code>.env.example</code> sí)</td>
+<td>Variable secreta de Render (URI de Neon)</td>
 <td>Key Vault / secretos del orquestador</td>
 </tr>
 <tr>
 <td><code>Jwt__SigningKey</code></td>
-<td>user-secrets</td>
+<td><code>appsettings.Development.json</code> (clave <em>DEV-ONLY</em>)</td>
 <td><code>.env</code></td>
+<td>Generada por Render</td>
 <td>Key Vault</td>
 </tr>
 <tr>
 <td>Data Protection key ring</td>
-<td>Carpeta local</td>
+<td>Carpeta local <code>.keys</code></td>
 <td>Volumen <code>dp-keys</code></td>
+<td>Tabla <code>data_protection_keys</code>, cifrada con <code>DataProtection__KeyEncryptionKey</code> (AES-256-GCM, generada por Render)</td>
 <td>Blob + Key Vault</td>
 </tr>
 </tbody>
 </table></div>
+<p>Si el <em>key ring</em> se guarda en la base de datos en <code>Production</code>, es obligatorio cifrarlo: sin <code>KeyEncryptionKey</code> la API no arranca. Guía de despliegue: <a href="deployment.html">deployment.md</a>.</p>
 <hr />
 <h2 id="6-aspectos-transversales">6. Aspectos transversales<a class="headerlink" href="#6-aspectos-transversales" title="Enlace a esta sección">#</a></h2>
 <div class="table-wrap"><table>

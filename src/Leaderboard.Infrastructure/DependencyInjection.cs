@@ -4,7 +4,6 @@ using Leaderboard.Infrastructure.Persistence;
 using Leaderboard.Infrastructure.Persistence.Repositories;
 using Leaderboard.Infrastructure.ReadModels;
 using Leaderboard.Infrastructure.Security;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,8 +16,13 @@ public static class DependencyInjection
 
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringName)
-            ?? throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.");
+        var configured = configuration.GetConnectionString(ConnectionStringName);
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            throw new InvalidOperationException($"Connection string '{ConnectionStringName}' is not configured.");
+        }
+
+        var connectionString = PostgresConnectionString.Normalize(configured);
 
         services.AddDbContext<AppDbContext>(options => options
             .UseNpgsql(connectionString, npgsql => npgsql
@@ -39,11 +43,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasherAdapter>();
         services.AddSingleton<IApiKeySecretProtector, ApiKeySecretProtector>();
 
-        var dataProtection = services.AddDataProtection().SetApplicationName("leaderboard-api");
-        if (configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
-        {
-            dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
-        }
+        services.AddLeaderboardDataProtection(configuration);
 
         return services;
     }

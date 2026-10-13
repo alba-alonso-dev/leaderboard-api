@@ -9,6 +9,7 @@ Punto de entrada a la documentación de **análisis, diseño, decisiones y resul
 | [Roadmap y tareas](roadmap-and-tasks.html) | ¿Cuándo y en qué orden? Fases Noviembre → Marzo, checklists por tarea, trazabilidad y riesgos. | [roadmap-and-tasks.md](./roadmap-and-tasks.md) |
 | [Estándares de código](coding-standards.html) | ¿Cómo se escribe y se prueba? Convenciones C#, CQRS liviano, Repository, Result + ProblemDetails, pirámide de tests. | [coding-standards.md](./coding-standards.md) |
 | [Rendimiento](performance.html) | ¿Cumple RNF-01? Benchmark k6 con 100 000 jugadores, antes/después y planes de ejecución. | [performance.md](./performance.md) |
+| [Despliegue gratuito](deployment.html) | ¿Cómo se publica una demo? Render + Neon paso a paso, secretos, *key ring* y límites. | [deployment.md](./deployment.md) |
 
 ## Decisiones de arquitectura (ADR)
 

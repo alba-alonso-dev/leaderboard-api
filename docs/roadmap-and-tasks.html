@@ -117,6 +117,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
       <h2>Resultados</h2>
       <ul>
         <li><a href="performance.html">Rendimiento<small>Benchmark k6 y planes de ejecución</small></a></li>
+        <li><a href="deployment.html">Despliegue gratuito<small>Render + Neon paso a paso</small></a></li>
       </ul>
       <h2>Decisiones (ADR)</h2>
       <ul>
@@ -440,6 +441,7 @@ li.task input { margin-right: .45rem; accent-color: var(--ok); }
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-14</strong> (S) Job <code>docs</code>: regenerar HTML (<code>python scripts/build_docs.py</code>) y fallar si hay diferencias (<code>git diff --exit-code docs/</code>)</li>
 <li class="task"><input type="checkbox" disabled aria-label="Pendiente"> <strong>F-15</strong> (S) Badges de CI y cobertura en README; tag <code>v0.4.0</code> — <em>parcial: badges de CI y documentación; el tag se sustituye por <code>v1.0.0</code></em></li>
 <li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-16</strong> (S) Publicación de <code>docs/</code> en GitHub Pages (<code>.github/workflows/pages.yml</code>)</li>
+<li class="task"><input type="checkbox" disabled checked aria-label="Completada"> <strong>F-17</strong> (M) Demo pública gratuita en Render + Neon: <code>render.yaml</code>, <em>key ring</em> cifrado en PostgreSQL, <code>X-Forwarded-For</code> detrás del proxy, cadenas de conexión URI (<a href="deployment.html">deployment.md</a>)</li>
 </ul>
 <p><strong>✅ Criterio de salida:</strong> clon limpio → <code>docker compose up</code> → Swagger operativo; CI verde en <code>main</code> y en PRs.</p>
 <hr />

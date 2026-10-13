@@ -1,0 +1,41 @@
+# Render Blueprint: free public demo of the API (https://render.com/docs/blueprint-spec).
+# Database: an external free PostgreSQL (e.g. Neon); paste its URL into ConnectionStrings__Postgres when prompted.
+# Step-by-step guide: docs/deployment.md
+services:
+  - type: web
+    name: leaderboard-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      # Render routes traffic to this port.
+      - key: PORT
+        value: "8080"
+      # Render's proxy terminates TLS: take the client IP and scheme from X-Forwarded-* (per-client rate limits).
+      - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
+        value: "true"
+      # postgresql://user:password@host/db?sslmode=require (URI or Npgsql format)
+      - key: ConnectionStrings__Postgres
+        sync: false
+      - key: Jwt__SigningKey
+        generateValue: true
+      # Encrypts the Data Protection key ring stored in PostgreSQL (no persistent disk on the free plan).
+      - key: DataProtection__KeyEncryptionKey
+        generateValue: true
+      - key: Database__MigrateOnStartup
+        value: "true"
+      - key: Swagger__Enabled
+        value: "true"
+      - key: Serilog__Format
+        value: json
+      - key: Seed__Admin__Email
+        sync: false
+      - key: Seed__Admin__Password
+        sync: false

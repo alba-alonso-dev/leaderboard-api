@@ -233,6 +233,7 @@ gantt
 - [x] **F-14** (S) Job `docs`: regenerar HTML (`python scripts/build_docs.py`) y fallar si hay diferencias (`git diff --exit-code docs/`)
 - [ ] **F-15** (S) Badges de CI y cobertura en README; tag `v0.4.0` — *parcial: badges de CI y documentación; el tag se sustituye por `v1.0.0`*
 - [x] **F-16** (S) Publicación de `docs/` en GitHub Pages (`.github/workflows/pages.yml`)
+- [x] **F-17** (M) Demo pública gratuita en Render + Neon: `render.yaml`, *key ring* cifrado en PostgreSQL, `X-Forwarded-For` detrás del proxy, cadenas de conexión URI ([deployment.md](deployment.md))
 
 **✅ Criterio de salida:** clon limpio → `docker compose up` → Swagger operativo; CI verde en `main` y en PRs.
 

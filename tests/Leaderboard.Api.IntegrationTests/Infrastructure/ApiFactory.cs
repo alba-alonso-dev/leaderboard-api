@@ -19,6 +19,9 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public const string AdminEmail = "admin@leaderboard.test";
     public const string AdminPassword = "AdminPassw0rd!";
 
+    /// <summary>Fixed 256-bit key so the key ring stored in the test database is encrypted, as in Production.</summary>
+    public static readonly string KeyEncryptionKey = Convert.ToBase64String(Enumerable.Range(1, 32).Select(i => (byte)i).ToArray());
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("leaderboard")
         .WithUsername("leaderboard")
@@ -43,7 +46,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public"],
-            TablesToIgnore = [new Respawn.Graph.Table("__ef_migrations_history")],
+            // The Data Protection key ring survives resets, like in a real deployment (hosts cache it in memory).
+            TablesToIgnore = [new Respawn.Graph.Table("__ef_migrations_history"), new Respawn.Graph.Table("data_protection_keys")],
         });
     }
 
@@ -74,6 +78,7 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             ["Jwt:SigningKey"] = "integration-tests-signing-key-0123456789abcdef",
             ["Database:MigrateOnStartup"] = "true",
             ["Swagger:Enabled"] = "true",
+            ["DataProtection:KeyEncryptionKey"] = KeyEncryptionKey,
             ["RateLimiting:Enabled"] = "false",
             ["Scores:MaxPerPlayerPerMinute"] = "0",
             ["Scores:MaxImprovementFactor"] = "0", // enabled only in PlausibilityTests

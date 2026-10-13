@@ -22,7 +22,7 @@ services:
       - key: ASPNETCORE_FORWARDEDHEADERS_ENABLED
         value: "true"
       # postgresql://user:password@host/db?sslmode=require (URI or Npgsql format)
-      - key: ConnectionStrings__Postgres
+      - key: postgresql://neondb_owner:npg_U8JTFyixrX6A@ep-red-tree-b9jwpx06-pooler.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
         sync: false
       - key: Jwt__SigningKey
         generateValue: true
@@ -35,7 +35,7 @@ services:
         value: "true"
       - key: Serilog__Format
         value: json
-      - key: Seed__Admin__Email
+      - key: alonso.marmany@gmail.com
         sync: false
-      - key: Seed__Admin__Password
+      - key: aalonso-98
         sync: false
